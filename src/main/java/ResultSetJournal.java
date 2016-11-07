@@ -1,5 +1,6 @@
 import lombok.Getter;
 import lombok.Setter;
+import metadata.Author;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,12 +12,13 @@ import java.util.List;
 @Setter
 public class ResultSetJournal
 {
-	List<String> Authors = new ArrayList<>();
-	List<String> Editor = new ArrayList<>();
+	List<Author> Authors = new ArrayList<>();
+	List<Author> Editor = new ArrayList<>();
 	String journalDOI;
 	String journalName;
 	String publisherId;
 	String publicationYear;
+	String XMLPathYear;
 
 	String Error="";
 

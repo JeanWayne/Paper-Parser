@@ -1,4 +1,5 @@
 
+import metadata.Author;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -22,8 +23,8 @@ import java.util.stream.Stream;
  */
 public class Main {
 
-//	static final String location="c://Hindawi";
-	static final String location="c://Hindawi_work";
+	static final String location="c://Hindawi";
+//	static final String location="c://Hindawi_work";
     static int i=0;
     static final String outputEncoding = "UTF-8";
     //public static List<Result> resultTorso = new ArrayList<>();
@@ -87,7 +88,7 @@ public class Main {
 //
 //        }
         ResultSetJournal rsj = new ResultSetJournal();
-
+		rsj.setXMLPathYear(xmlSource.substring(11,15));
         DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory
                 .newInstance();
         DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
@@ -139,14 +140,45 @@ public class Main {
 				try {
 					if (currentNode.getAttributes().item(0).getNodeValue().equals("author")) {
 						try {
-							rsj.getAuthors().add(currentNode.getTextContent());
+							for(int j=0; j<currentNode.getChildNodes().getLength();j++)
+							{
+
+								Author a= new Author();
+								if(currentNode.getChildNodes().item(j).getNodeName().equals("name"))
+								{
+									if(currentNode.getChildNodes().item(j).getChildNodes().item(0).getNodeName().equals("surname"))
+										a.setLastName(currentNode.getChildNodes().item(j).getChildNodes().item(0).getTextContent());
+									if(currentNode.getChildNodes().item(j).getChildNodes().item(1).getNodeName().equals("given-names"))
+										a.setFirstName(currentNode.getChildNodes().item(j).getChildNodes().item(1).getTextContent());
+
+								}
+								if(a.getFirstName()!=null&&a.getLastName()!=null)
+								rsj.getAuthors().add(a);
+
+							}
+							//currentNode.getChildNodes().item(0).getChildNodes().item(1).getTextContent()
+//							rsj.getAuthors().add(currentNode.getTextContent());
 						} catch (Exception e) {
 							rsj.setJournalName("NO AUTHOR FOUND");
 						}
 					}
 					if (currentNode.getAttributes().item(0).getNodeValue().equals("Academic Editor")) {
 						try {
-							rsj.getEditor().add(currentNode.getTextContent());
+							for(int j=0; j<currentNode.getChildNodes().getLength();j++)
+							{
+								Author a= new Author();
+								if(currentNode.getChildNodes().item(j).getNodeName().equals("name"))
+								{
+									if(currentNode.getChildNodes().item(j).getChildNodes().item(0).getNodeName().equals("surname"))
+										a.setLastName(currentNode.getChildNodes().item(j).getChildNodes().item(0).getTextContent());
+									if(currentNode.getChildNodes().item(j).getChildNodes().item(1).getNodeName().equals("given-names"))
+										a.setFirstName(currentNode.getChildNodes().item(j).getChildNodes().item(1).getTextContent());
+
+								}
+								if(a.getFirstName()!=null&&a.getLastName()!=null)
+								rsj.getEditor().add(a);
+							}
+//							rsj.getEditor().add(currentNode.getTextContent());
 						} catch (Exception e) {
 							rsj.setJournalName("NO EDITOR FOUND");
 						}
@@ -235,6 +267,17 @@ public class Main {
                             break;
                     }
                 }
+                Node iter=currentNode.getParentNode();
+				if(r.getCaptionBody()==null&&iter!=null)
+				{
+					NodeList childs = iter.getChildNodes();
+					for(int f =0;f<childs.getLength();f++)
+					{
+						if (childs.item(f).getNodeName().equals("caption")) {
+							r.setCaptionBody(iter.getTextContent());
+						}
+					}
+				}
                 r.setRsj(rsj);
 				r.setFindingID(rsj.getResultList().size());
                 rsj.getResultList().add(r);
