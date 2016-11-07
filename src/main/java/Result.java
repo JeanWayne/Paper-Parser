@@ -16,8 +16,8 @@ import java.net.URL;
 @Setter
 public class Result
 {
-
-	String journalName;
+	ResultSetJournal rsj;
+	int findingID;
 	String DOI;
 	String captionTitle;
 	String captionBody;
@@ -26,8 +26,8 @@ public class Result
 	String graphicID;
 	String path;
 
-	public void Restul()
-	{;}
+	public void Restul(ResultSetJournal rsj)
+	{this.rsj=rsj;}
 
 	public void save2disk() throws IOException
 	{
@@ -49,12 +49,13 @@ public class Result
 		fos.write(response);
 		fos.close();
 	}
-	public void save2db() throws IOException
+	public void save2dbWithImage() throws IOException
 	{
-      MongoDBRepo db = new MongoDBRepo();
+      	MongoDBRepo db = MongoDBRepo.getInstance();
 		graphicID=graphicDOI.substring(graphicDOI.length()-4,graphicDOI.length());
 		path=graphicDOI.substring(graphicDOI.length()-25,graphicDOI.length());
-		URL url = new URL("http://journals.plos.org/ploscompbiol/article/figure/image?size=large&id="+graphicDOI);
+		//URL url = new URL("http://journals.plos.org/ploscompbiol/article/figure/image?size=large&id="+graphicDOI);
+		URL url = new URL("https://www.hindawi.com/journals/"+rsj.getPublisherId()+"/"+rsj.getPublicationYear()+"/"+graphicDOI+".jpg");
 		InputStream in = new BufferedInputStream(url.openStream());
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		byte[] buf = new byte[1024];
@@ -67,8 +68,18 @@ public class Result
 		in.close();
 		byte[] response = out.toByteArray();
 		db.write("PLOS",graphicDOI,captionBody,captionTitle,response);
-
 	}
+	public void save2dbWithOutImage() throws IOException
+	{
+		MongoDBRepo db = MongoDBRepo.getInstance();
+		//URL url = new URL("http://journals.plos.org/ploscompbiol/article/figure/image?size=large&id="+graphicDOI);
+		URL url = new URL("https://www.hindawi.com/journals/"+rsj.getPublisherId()+"/"+rsj.getPublicationYear()+"/"+graphicDOI+".jpg");
+		if(rsj.getError()=="")
+		db.write(rsj.getJournalName(),rsj.getPublicationYear(),rsj.getJournalDOI(),findingID,captionBody,url.toString(),rsj.getAuthors(),rsj.getEditor());
+		else
+			db.writeError(rsj.getError());
+	}
+
 
 
 

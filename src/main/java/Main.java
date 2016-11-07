@@ -22,21 +22,35 @@ import java.util.stream.Stream;
  */
 public class Main {
 
+//	static final String location="c://Hindawi";
+	static final String location="c://Hindawi_work";
+    static int i=0;
     static final String outputEncoding = "UTF-8";
-    public static List<Result> resultTorso = new ArrayList<>();
-
+    //public static List<Result> resultTorso = new ArrayList<>();
+    public static List<ResultSetJournal> resultTorso = new ArrayList<>();
 
     public static void main(String[] args) throws IOException
     {
         System.out.println("Start PaperParser");
  //       MongoDBRepo db = new MongoDBRepo();
 
-        try(Stream<Path> paths = Files.walk(Paths.get("c://paper"))) {
-            paths.forEach(filePath -> {
-                if (Files.isRegularFile(filePath)) {
-                    //System.out.println(filePath);
+        try(Stream<Path> paths = Files.walk(Paths.get(location))) {
+            paths.forEach(yearPath -> {
+                if (Files.isRegularFile(yearPath))
+                {
+                    //System.out.println(yearPath);
                     try {
-                        parseXML(filePath.toAbsolutePath().toString());
+                        parseXML(yearPath.toAbsolutePath().toString());
+//						for(ResultSetJournal r : resultTorso)
+//						{
+//							for(Result res : r.getResultList())
+//							{
+//								res.save2dbWithOutImage();
+//							}
+//							System.out.println(r.getJournalDOI()+ " --- was written to Mongo \\o/");
+//
+//						}
+//						resultTorso.clear();
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ParserConfigurationException e) {
@@ -49,12 +63,15 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    for(Result r : resultTorso)
-    {
-        r.save2db();
-        System.out.println("DB Wrote \\o/");
-    }
-        System.out.println("==== DONE ====");
+		for(ResultSetJournal r : resultTorso)
+		{
+			for(Result res : r.getResultList())
+			{
+				res.save2dbWithOutImage();
+			}
+			//System.out.println(r.getJournalDOI()+ " --- was written to Mongo \\o/");
+		}
+        System.out.println("DONE ----  " + resultTorso.size() + " elements completed");
 
     }
     public static void parseXML(String xmlSource) throws IOException, ParserConfigurationException, SAXException
@@ -69,44 +86,147 @@ public class Main {
 //            List<Element> p = e.getChildren();
 //
 //        }
+        ResultSetJournal rsj = new ResultSetJournal();
+
         DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory
                 .newInstance();
         DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
-        org.w3c.dom.Document document = docBuilder.parse(new File(xmlSource));
-        doSomething(document.getDocumentElement());
-        System.out.println("XML Prase DONE");
+		org.w3c.dom.Document document = null;
+		try {
+			 document = docBuilder.parse(new File(xmlSource));
+		}
+		catch(Exception e)
+		{
+			System.out.println("Could not been read: "+xmlSource+"\n" + e);
+			rsj.setError(xmlSource +":   "+ e);
+			document=null;
+		}
+		if(document!=null)
+			doSomething(rsj,document.getDocumentElement());
+
+		resultTorso.add(rsj);
+//		++i;
+//		if(i%1000==0)
+//        System.out.println("\n\n      #"+(i)+" DONE  -  XML Parse DONE   \n\n");
 
     }
 
-    private static void doSomething(Node node)
+    private static void doSomething(ResultSetJournal rsj,Node node)
     {
-        // do something with the current node instead of System.out
-        //System.out.println(node.getNodeName());
+        String DOI = null;
 
         NodeList nodeList = node.getChildNodes();
         for (int i = 0; i < nodeList.getLength(); i++) {
             Node currentNode = nodeList.item(i);
+            if(currentNode.getNodeName().equals("article-id"))
+            {
+				try {
+					if (currentNode.getAttributes().item(0).getNodeValue().equals("doi")) {
+						try {
+							rsj.setJournalDOI(currentNode.getTextContent());
+						} catch (Exception e) {
+							rsj.setJournalDOI("NO DOI FOUND");
+						}
+					}
+				}
+				catch(NullPointerException e)
+				{
+
+				}
+            }
+            if(currentNode.getNodeName().equals("contrib"))
+			{
+				try {
+					if (currentNode.getAttributes().item(0).getNodeValue().equals("author")) {
+						try {
+							rsj.getAuthors().add(currentNode.getTextContent());
+						} catch (Exception e) {
+							rsj.setJournalName("NO AUTHOR FOUND");
+						}
+					}
+					if (currentNode.getAttributes().item(0).getNodeValue().equals("Academic Editor")) {
+						try {
+							rsj.getEditor().add(currentNode.getTextContent());
+						} catch (Exception e) {
+							rsj.setJournalName("NO EDITOR FOUND");
+						}
+					}
+				}
+				catch(NullPointerException e)
+				{
+
+				}
+			}
+            if(currentNode.getNodeName().equals("journal-title"))
+            {
+				try{
+                rsj.setJournalName(currentNode.getTextContent());
+				}catch(Exception e)
+				{
+					rsj.setJournalName("NO NAME FOUND");
+				}
+            }
+            if(currentNode.getNodeName().equals("pub-date"))
+            {
+				try {
+					if (currentNode.getAttributes().item(0).getNodeValue().equals("publication-year")) {
+						try {
+							rsj.setPublicationYear(currentNode.getTextContent());
+						} catch (Exception e) {
+							rsj.setPublicationYear("NO YEAR FOUND");
+						}
+					}
+				}
+				catch(NullPointerException e)
+				{
+
+				}
+            }
+            if(currentNode.getNodeName().equals("journal-id"))
+            {
+				try{
+                if(currentNode.getAttributes().item(0).getNodeValue().equals("publisher-id"))
+                {
+					try{
+                    rsj.setPublisherId(currentNode.getTextContent());
+					}catch(Exception e)
+					{
+						rsj.setPublisherId("NO ID FOUND");
+					}
+                }}
+				catch(NullPointerException e)
+				{
+
+				}
+            }
             if(currentNode.getNodeName().equals("fig"))
             {
                 //System.out.println("FOUND");
 
                 Result r = new Result();
-
+                r.setDOI(DOI);
                 NodeList fig = currentNode.getChildNodes();
                 for (int j = 0; j < fig.getLength(); j++) {
                     Node figNode = fig.item(j);
                     switch(figNode.getNodeName())
                     {
-                        case "object-id":
-                        r.setDOI(figNode.getTextContent());
-                            break;
+//                        case "object-id":
+//                        r.setDOI(figNode.getTextContent());
+//                            break;
                         case "label":
                             r.setLabel(figNode.getTextContent());
                             break;
                         case "caption":
-                            //TODO:  This might be an error source if a Caotion has more than 1 <p> section. 0 and 2 are left over, because they are only newline feed commands
-                            r.setCaptionTitle(figNode.getChildNodes().item(1).getTextContent());
-                            r.setCaptionBody(figNode.getChildNodes().item(3).getTextContent());
+                            //TODO:  This might be an error source if a Caption has more than 1 <p> section. 0 and 2 are left over, because they are only newline feed commands
+                            try
+							{
+								r.setCaptionBody(figNode.getChildNodes().item(0).getTextContent());
+							}catch(Exception e)
+							{
+								r.setCaptionBody("NO BODY FOUND");
+							}
+                            //r.setCaptionTitle(figNode.getChildNodes().item(1).getTextContent());
+                            //r.setCaptionBody(figNode.getChildNodes().item(3).getTextContent());
                             break;
                         case "graphic":
                             r.setGraphicDOI(figNode.getAttributes().getNamedItem("xlink:href").getNodeValue());
@@ -115,14 +235,13 @@ public class Main {
                             break;
                     }
                 }
-//                NamedNodeMap a = currentNode.getAttributes();
-//                Node caption = a.getNamedItem("caption");
-//                Node grafik = a.getNamedItem("graphic");
-                resultTorso.add(r);
+                r.setRsj(rsj);
+				r.setFindingID(rsj.getResultList().size());
+                rsj.getResultList().add(r);
             }
             if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
                 //calls this method for all the children which is Element
-                doSomething(currentNode);
+                doSomething(rsj, currentNode);
             }
         }
     }
