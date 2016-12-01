@@ -14,6 +14,9 @@ public class ResultSetJournal
 {
 	List<Author> Authors = new ArrayList<>();
 	List<Author> Editor = new ArrayList<>();
+	List<String> Sections = new ArrayList<>();
+	String Title;
+	String Abstract;
 	String journalDOI;
 	String journalName;
 	String publisherId;
@@ -23,6 +26,4 @@ public class ResultSetJournal
 	String Error="";
 
 	List<Result> resultList = new ArrayList<>();
-
-
 }

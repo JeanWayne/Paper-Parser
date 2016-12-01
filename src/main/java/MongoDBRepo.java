@@ -8,6 +8,8 @@ import metadata.Author;
 import org.bson.BsonDocument;
 import org.bson.Document;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,6 +38,40 @@ public class MongoDBRepo {
         d.append("graphicOID",graphicID).append("captionTitle",captionTitle).append("captionBody",captionBody).append("image",image);
         db.getCollection("plos").insertOne(d);
     }
+
+    public void writeJournal(ResultSetJournal rsj)
+    {
+        Document d = new Document("journalName", rsj.getJournalName());
+        List<Document> Authors = new ArrayList<>();
+        List<Document> Editors = new ArrayList<>();
+        List<Document> findings = new ArrayList<>();
+
+        for(Author a : rsj.getAuthors())
+        {
+            Authors.add(new Document("firstName",a.getFirstName()).append("lastName",a.getLastName()));
+        }
+        for(Author a : rsj.getEditor())
+        {
+            Editors.add(new Document("firstName",a.getFirstName()).append("lastName",a.getLastName()));
+        }
+
+        for(Result a : rsj.getResultList())
+        {
+            String s ="https://www.hindawi.com/journals/"+rsj.getPublisherId()+"/"+rsj.getPublicationYear()+"/"+a.getGraphicDOI()+".jpg";
+
+            findings.add(new Document("findingID",a.getFindingID()).append("captionTitle",a.getCaptionTitle()).append("captionBody",a.getCaptionBody()).append("URL2Image",s));
+        }
+        d.append("DOI",rsj.getJournalDOI());
+        d.append("Year",rsj.getPublicationYear());
+        d.append("Authors",Authors);
+        d.append("Editors",Editors);
+        d.append("Abstract",rsj.getAbstract());
+        d.append("Body",rsj.getSections());
+        d.append("findings",findings);
+        db.getCollection("hindawi_"+date).insertOne(d);
+    }
+
+
     public void write(String journal, String Year, String DOI, int findingID, String captionBody, String imageURL, List<Author> Author, List<Author> Editor)
     {
         Document d = new Document("journalName", journal);

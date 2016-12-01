@@ -51,12 +51,23 @@ public class Result
 	}
 	public void save2dbWithImage() throws IOException
 	{
-      	MongoDBRepo db = MongoDBRepo.getInstance();
-		graphicID=graphicDOI.substring(graphicDOI.length()-4,graphicDOI.length());
-		path=graphicDOI.substring(graphicDOI.length()-25,graphicDOI.length());
+//      	MongoDBRepo db = MongoDBRepo.getInstance();
+//		graphicID=graphicDOI.substring(graphicDOI.length()-4,graphicDOI.length());
+//		path=graphicDOI.substring(graphicDOI.length()-25,graphicDOI.length());
 		//URL url = new URL("http://journals.plos.org/ploscompbiol/article/figure/image?size=large&id="+graphicDOI);
-		URL url = new URL("https://www.hindawi.com/journals/"+rsj.getPublisherId()+"/"+rsj.getPublicationYear()+"/"+graphicDOI+".jpg");
-		InputStream in = new BufferedInputStream(url.openStream());
+		if(rsj.getPublicationYear()==null||rsj.getPublicationYear().length()>4)
+			rsj.setPublicationYear(rsj.getXMLPathYear());
+
+		InputStream in;
+		URL url = new URL("https://www.hindawi.com/journals/"+rsj.getPublisherId().toLowerCase()+"/"+rsj.getPublicationYear()+"/"+graphicDOI+".jpg");
+		try {
+			in = new BufferedInputStream(url.openStream());
+		}
+		catch(Exception e)
+		{
+			System.out.println(e);
+			return;
+		}
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		byte[] buf = new byte[1024];
 		int n = 0;
@@ -67,7 +78,21 @@ public class Result
 		out.close();
 		in.close();
 		byte[] response = out.toByteArray();
-		db.write("PLOS",graphicDOI,captionBody,captionTitle,response);
+
+		try {
+			FileOutputStream fos = new FileOutputStream("C://hindawi_images//" + rsj.getJournalDOI().replace('\\','_').replace('/','_') +"---"+ this.findingID + ".jpg");
+			fos.write(response);
+			fos.close();
+			System.out.println("Wrote to Disk: "+rsj.getJournalDOI()+this.findingID+".jpg");
+
+		}
+		catch(Exception e)
+		{
+			System.out.println(e);
+			System.out.println("ERROR WITH :::::  "+rsj.getJournalDOI()+this.findingID+".jpg");
+		}
+
+		//db.write("PLOS",graphicDOI,captionBody,captionTitle,response);
 	}
 	public void save2dbWithOutImage() throws IOException
 	{

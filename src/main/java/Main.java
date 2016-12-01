@@ -64,14 +64,35 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
-		for(ResultSetJournal r : resultTorso)
-		{
-			for(Result res : r.getResultList())
-			{
-				res.save2dbWithOutImage();
-			}
-			//System.out.println(r.getJournalDOI()+ " --- was written to Mongo \\o/");
-		}
+//        for(ResultSetJournal rsj : resultTorso)
+//		{
+//			MongoDBRepo.getInstance().writeJournal(rsj);
+//
+//			System.out.println("Wrote: "+rsj.getXMLPathYear());
+//		}
+
+        //Paralelisieren nicht ohne weiteres möglich?!
+//        resultTorso.parallelStream().forEach(rsj -> {
+//			MongoDBRepo.getInstance().writeJournal(rsj);
+//			System.out.println("Wrote: "+rsj.getXMLPathYear());
+////			for(Result res : rsj.getResultList())
+////			{
+////				try {
+////					res.save2dbWithImage();
+////				} catch (IOException e) {
+////					e.printStackTrace();
+////				}
+////			}
+//		});
+//		for(ResultSetJournal r : resultTorso)
+//		{
+//			for(Result res : r.getResultList())
+//			{
+////				res.save2dbWithOutImage();
+//				res.save2dbWithImage();
+//			}
+//			//System.out.println(r.getJournalDOI()+ " --- was written to Mongo \\o/");
+//		}
         System.out.println("DONE ----  " + resultTorso.size() + " elements completed");
 
     }
@@ -103,14 +124,105 @@ public class Main {
 			document=null;
 		}
 		if(document!=null)
-			doSomething(rsj,document.getDocumentElement());
+		{
+			getAllTokens(rsj, document.getDocumentElement());
+			doSomething(rsj, document.getDocumentElement());
+			MongoDBRepo.getInstance().writeJournal(rsj);
+			System.out.println("Wrote: "+rsj.getXMLPathYear());
 
-		resultTorso.add(rsj);
+		}
 //		++i;
 //		if(i%1000==0)
 //        System.out.println("\n\n      #"+(i)+" DONE  -  XML Parse DONE   \n\n");
 
     }
+
+    private static void getAllTokens( ResultSetJournal rsj,Node root)
+	{
+		//System.out.println(root.getTextContent());
+		getAbstract(rsj, root);
+		getBody(rsj, root);
+	}
+	private static void getAbstract(ResultSetJournal rsj, Node root)
+	{
+		NodeList nodeList = root.getChildNodes();
+		for (int i = 0; i < nodeList.getLength(); i++) {
+			Node currentNode = nodeList.item(i);
+			try {
+				if (currentNode.getNodeName().equals("abstract"))
+				{
+					try
+					{
+						//System.out.println(currentNode.getTextContent());
+						rsj.setAbstract(currentNode.getTextContent());
+						return;
+					}
+					catch (Exception e)
+					{
+						System.out.println("Error getAbstract:" +e);
+					}
+				}
+			}
+			catch(NullPointerException e)
+			{
+
+			}
+			if(currentNode.getNodeType() == Node.ELEMENT_NODE)
+				getAbstract(rsj, currentNode);
+		}
+	}
+	private static void getAllSections(ResultSetJournal rsj, Node root)
+	{
+		{
+			NodeList nodeList = root.getChildNodes();
+			for (int i = 0; i < nodeList.getLength(); i++) {
+				Node currentNode = nodeList.item(i);
+				try {
+					if (currentNode.getNodeName().equals("sec"))
+					{
+						try
+						{
+							//System.out.println("---- Section "+i+" -----");
+							//System.out.println(currentNode.getTextContent());
+							rsj.getSections().add(currentNode.getTextContent());
+						}
+						catch (Exception e)
+						{
+							System.out.println("Error getAllSections:" +e);
+						}
+					}
+				}
+				catch(NullPointerException e)
+				{
+					System.out.println("Error getAllSections:" +e);
+
+				}
+			}
+		}
+	}
+	private static void getBody(ResultSetJournal rsj ,Node root)
+	{
+		NodeList nodeList = root.getChildNodes();
+		for (int i = 0; i < nodeList.getLength(); i++) {
+			Node currentNode = nodeList.item(i);
+			try {
+				if (currentNode.getNodeName().equals("body"))
+				{
+					try
+					{
+						getAllSections(rsj, currentNode);					}
+					catch (Exception e)
+					{
+						System.out.println("Error getBody:" +e);
+					}
+				}
+			}
+			catch(NullPointerException e)
+			{
+				System.out.println("Error getBody:" +e);
+			}
+		}
+	}
 
     private static void doSomething(ResultSetJournal rsj,Node node)
     {
@@ -135,6 +247,17 @@ public class Main {
 
 				}
             }
+            if(currentNode.getNodeName().equals("article-title"))
+			{
+				try
+				{
+					rsj.setTitle(currentNode.getTextContent());
+
+				}
+				catch (Exception e) {
+				rsj.setTitle("NO TAG 'article-title' FOUND");
+				}
+			}
             if(currentNode.getNodeName().equals("contrib"))
 			{
 				try {
