@@ -110,6 +110,7 @@ public class Main {
 //        }
         ResultSetJournal rsj = new ResultSetJournal();
 		rsj.setXMLPathYear(xmlSource.substring(11,15));
+		rsj.setXMLPathComplete((xmlSource));
         DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory
                 .newInstance();
         DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
@@ -128,7 +129,7 @@ public class Main {
 			getAllTokens(rsj, document.getDocumentElement());
 			doSomething(rsj, document.getDocumentElement());
 			MongoDBRepo.getInstance().writeJournal(rsj);
-			System.out.println("Wrote: "+rsj.getXMLPathYear());
+			System.out.println("Wrote: "+rsj.getXMLPathComplete());
 
 		}
 //		++i;
@@ -210,7 +211,9 @@ public class Main {
 				{
 					try
 					{
-						getAllSections(rsj, currentNode);					}
+						getAllSections(rsj, currentNode);
+						rsj.setBody(currentNode.getTextContent());
+					}
 					catch (Exception e)
 					{
 						System.out.println("Error getBody:" +e);

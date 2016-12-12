@@ -55,19 +55,28 @@ public class MongoDBRepo {
             Editors.add(new Document("firstName",a.getFirstName()).append("lastName",a.getLastName()));
         }
 
+
         for(Result a : rsj.getResultList())
         {
             String s ="https://www.hindawi.com/journals/"+rsj.getPublisherId()+"/"+rsj.getPublicationYear()+"/"+a.getGraphicDOI()+".jpg";
 
             findings.add(new Document("findingID",a.getFindingID()).append("captionTitle",a.getCaptionTitle()).append("captionBody",a.getCaptionBody()).append("URL2Image",s));
         }
+
         d.append("DOI",rsj.getJournalDOI());
-        d.append("Year",rsj.getPublicationYear());
+
+        if(rsj.getPublicationYear()!=null)
+            d.append("Year",rsj.getPublicationYear().replaceAll("\t","").replaceAll(" ",""));
+        else
+            d.append("Year",rsj.getXMLPathYear());
+        d.append("Title",rsj.getTitle());
         d.append("Authors",Authors);
         d.append("Editors",Editors);
         d.append("Abstract",rsj.getAbstract());
-        d.append("Body",rsj.getSections());
+        d.append("Body",rsj.getBody());
         d.append("findings",findings);
+        d.append("Path2File",rsj.getXMLPathComplete());
+
         db.getCollection("hindawi_"+date).insertOne(d);
     }
 

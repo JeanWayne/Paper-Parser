@@ -15,6 +15,7 @@ public class ResultSetJournal
 	List<Author> Authors = new ArrayList<>();
 	List<Author> Editor = new ArrayList<>();
 	List<String> Sections = new ArrayList<>();
+	String Body;
 	String Title;
 	String Abstract;
 	String journalDOI;
@@ -22,6 +23,7 @@ public class ResultSetJournal
 	String publisherId;
 	String publicationYear;
 	String XMLPathYear;
+	String XMLPathComplete;
 
 	String Error="";
 
