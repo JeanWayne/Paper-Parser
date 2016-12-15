@@ -45,7 +45,6 @@ public class MongoDBRepo {
         List<Document> Authors = new ArrayList<>();
         List<Document> Editors = new ArrayList<>();
         List<Document> findings = new ArrayList<>();
-
         for(Author a : rsj.getAuthors())
         {
             Authors.add(new Document("firstName",a.getFirstName()).append("lastName",a.getLastName()));
@@ -66,16 +65,29 @@ public class MongoDBRepo {
         d.append("DOI",rsj.getJournalDOI());
 
         if(rsj.getPublicationYear()!=null)
-            d.append("Year",rsj.getPublicationYear().replaceAll("\t","").replaceAll(" ",""));
+            d.append("year",rsj.getPublicationYear().replaceAll("\t","").replaceAll(" ",""));
         else
-            d.append("Year",rsj.getXMLPathYear());
-        d.append("Title",rsj.getTitle());
-        d.append("Authors",Authors);
-        d.append("Editors",Editors);
-        d.append("Abstract",rsj.getAbstract());
-        d.append("Body",rsj.getBody());
+            d.append("year",rsj.getXMLPathYear());
+
+
+        d.append("title",rsj.getTitle());
+        d.append("authors",Authors);
+        d.append("numOfAuthor",Authors.size());
+        d.append("editor",Editors);
+        d.append("numOfEditor",Editors.size());
+        d.append("abstract",rsj.getAbstract());
+        if(rsj.getAbstract()!=null)
+            d.append("abstractLenght",rsj.getAbstract().length());
+        else
+            d.append("abstractLenght","Abstract is NULL");
+
+        d.append("body",rsj.getBody());
+        if(rsj.getBody()!=null)
+            d.append("bodyLenght",rsj.getBody().length());
+        else
+            d.append("bodyLenght","Body is NULL");
         d.append("findings",findings);
-        d.append("Path2File",rsj.getXMLPathComplete());
+        d.append("path2file",rsj.getXMLPathComplete());
 
         db.getCollection("hindawi_"+date).insertOne(d);
     }

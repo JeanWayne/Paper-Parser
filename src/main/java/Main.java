@@ -155,7 +155,7 @@ public class Main {
 					try
 					{
 						//System.out.println(currentNode.getTextContent());
-						rsj.setAbstract(currentNode.getTextContent());
+						rsj.setAbstract(currentNode.getTextContent().trim());
 						return;
 					}
 					catch (Exception e)
@@ -185,7 +185,7 @@ public class Main {
 						{
 							//System.out.println("---- Section "+i+" -----");
 							//System.out.println(currentNode.getTextContent());
-							rsj.getSections().add(currentNode.getTextContent());
+							rsj.getSections().add(currentNode.getTextContent().trim());
 						}
 						catch (Exception e)
 						{
@@ -212,7 +212,7 @@ public class Main {
 					try
 					{
 						getAllSections(rsj, currentNode);
-						rsj.setBody(currentNode.getTextContent());
+						rsj.setBody(currentNode.getTextContent().trim());
 					}
 					catch (Exception e)
 					{
@@ -239,7 +239,7 @@ public class Main {
 				try {
 					if (currentNode.getAttributes().item(0).getNodeValue().equals("doi")) {
 						try {
-							rsj.setJournalDOI(currentNode.getTextContent());
+							rsj.setJournalDOI(currentNode.getTextContent().trim());
 						} catch (Exception e) {
 							rsj.setJournalDOI("NO DOI FOUND");
 						}
@@ -329,7 +329,8 @@ public class Main {
 				try {
 					if (currentNode.getAttributes().item(0).getNodeValue().equals("publication-year")) {
 						try {
-							rsj.setPublicationYear(currentNode.getTextContent());
+
+							rsj.setPublicationYear(currentNode.getTextContent().trim());
 						} catch (Exception e) {
 							rsj.setPublicationYear("NO YEAR FOUND");
 						}

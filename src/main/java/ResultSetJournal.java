@@ -17,8 +17,10 @@ public class ResultSetJournal
 	List<String> Sections = new ArrayList<>();
 	String Body;
 	String Title;
+	Integer bodyLenght=-1;
+	Integer abstractLenght=-1;
 	String Abstract;
-	String journalDOI;
+	String journalDOI ="";
 	String journalName;
 	String publisherId;
 	String publicationYear;
