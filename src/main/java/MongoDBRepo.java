@@ -25,8 +25,8 @@ public class MongoDBRepo {
     {
         if (MongoDBRepo.instance == null) {
             MongoDBRepo.instance = new MongoDBRepo();
-            MongoDBRepo.mongoClient = new MongoClient("localhost", 27017);
-            MongoDBRepo.db = mongoClient.getDatabase("Papers");
+            MongoDBRepo.mongoClient = new MongoClient("141.71.5.19", 27017);
+            MongoDBRepo.db = mongoClient.getDatabase("workshop");
             date=System.currentTimeMillis()+"";
         }
         return MongoDBRepo.instance;
@@ -54,9 +54,22 @@ public class MongoDBRepo {
             Editors.add(new Document("firstName",a.getFirstName()).append("lastName",a.getLastName()));
         }
 
+        if(rsj.getPublicationYear()!=null)
+            d.append("year",rsj.getPublicationYear().replaceAll("\t","").replaceAll(" ",""));
+        else {
+
+            rsj.setPublicationYear(rsj.getXMLPathYear());
+            d.append("year", rsj.getXMLPathYear());
+        }
+
+
 
         for(Result a : rsj.getResultList())
         {
+            if(rsj.getPublicationYear()==null)
+                System.out.println("_____________________________________________");
+            if(rsj.getPublicationYear().equals("null"))
+                System.out.println("_____________________________________________");
             String s ="https://www.hindawi.com/journals/"+rsj.getPublisherId()+"/"+rsj.getPublicationYear()+"/"+a.getGraphicDOI()+".jpg";
 
             findings.add(new Document("findingID",a.getFindingID()).append("captionTitle",a.getCaptionTitle()).append("captionBody",a.getCaptionBody()).append("URL2Image",s));
@@ -64,10 +77,6 @@ public class MongoDBRepo {
 
         d.append("DOI",rsj.getJournalDOI());
 
-        if(rsj.getPublicationYear()!=null)
-            d.append("year",rsj.getPublicationYear().replaceAll("\t","").replaceAll(" ",""));
-        else
-            d.append("year",rsj.getXMLPathYear());
 
 
         d.append("title",rsj.getTitle());

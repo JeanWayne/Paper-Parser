@@ -23,8 +23,8 @@ import java.util.stream.Stream;
  */
 public class Main {
 
-	static final String location="c://Hindawi";
-//	static final String location="c://Hindawi_work";
+//	static final String location="c://Hindawi";
+	static final String location="c://Hindawi_work";
     static int i=0;
     static final String outputEncoding = "UTF-8";
     //public static List<Result> resultTorso = new ArrayList<>();
