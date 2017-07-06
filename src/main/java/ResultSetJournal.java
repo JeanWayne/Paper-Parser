@@ -22,10 +22,16 @@ public class ResultSetJournal
 	String Abstract;
 	String journalDOI ="";
 	String journalName;
-	String publisherId;
+	String PublisherId;
 	String publicationYear;
 	String XMLPathYear;
 	String XMLPathComplete;
+	String volume;
+	String issue;
+	String pages;
+	List<String> keywords = new ArrayList<>();
+	String license;
+	String publisher;
 
 	String Error="";
 
