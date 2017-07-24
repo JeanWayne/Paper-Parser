@@ -257,7 +257,7 @@ public class Main {
 
 				catch(NullPointerException e)
 				{
-
+//
 				}
             }
             if(currentNode.getNodeName().equals("article-title"))
