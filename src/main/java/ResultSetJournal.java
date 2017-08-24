@@ -1,7 +1,10 @@
 import lombok.Getter;
 import lombok.Setter;
 import metadata.Author;
+import metadata.Citation;
+import metadata.ID;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,14 +29,18 @@ public class ResultSetJournal
 	String publicationYear;
 	String XMLPathYear;
 	String XMLPathComplete;
-	String volume;
-	String issue;
-	String pages;
-	List<String> keywords = new ArrayList<>();
-	String license;
-	String publisher;
-
+	String Volume;
+	String Issue;
+	String Pages;
+	List<String> Keywords = new ArrayList<>();
+	String License;
+	String Publisher;
+	String pmcID;
+	File file;
+	boolean hasFormula;
+	String copyrightHolder;
 	String Error="";
-
+	List <Citation> Bibliography = new ArrayList<>();
+	List<ID> IDs = new ArrayList<>();
 	List<Result> resultList = new ArrayList<>();
 }
