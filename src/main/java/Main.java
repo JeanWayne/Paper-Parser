@@ -45,7 +45,7 @@ public class Main implements Text{
 	//TODO: Lösung für Formeln
 	//TODO: Automatisches Einfügen von Referenzen aus anderer Stelle im Text (hauptsächlich Copernicus)
 //	static final String location="c://Hindawi";
-	static final String location="E:\\Miniminitest";
+	static final String location="E:\\Mittelset\\Hindawi";
     static int i=0;
     static final String outputEncoding = "UTF-8";
     //public static List<Result> resultTorso = new ArrayList<>();
@@ -205,32 +205,32 @@ public class Main implements Text{
 
 		if(document!=null)
 		{
-			long start = System.currentTimeMillis();
+			//long start = System.currentTimeMillis();
 			mapReferences(rsj, document.getDocumentElement(), document.getDocumentElement());
-			System.out.print("mapreferences"); System.out.println( System.currentTimeMillis() - start);
-			start = System.currentTimeMillis();
+			//System.out.print("mapreferences"); System.out.println( System.currentTimeMillis() - start);
+			//start = System.currentTimeMillis();
 			getAllTokens(rsj, document.getDocumentElement());
 			doSomething(rsj, document.getDocumentElement());
-			System.out.print("doSomething");System.out.println(System.currentTimeMillis() - start);
-			start = System.currentTimeMillis();
+			//System.out.print("doSomething");System.out.println(System.currentTimeMillis() - start);
+			//start = System.currentTimeMillis();
 			articles+=1;
 			if(rsj.hasFormula)withFormula+=1;
 			// (rsj, article, article);
 			//getAllTokens(rsj, article);
 			//doSomething(rsj, article);
 			context(rsj);
-			System.out.print("context");System.out.println(System.currentTimeMillis() - start);
-			start = System.currentTimeMillis();
+			//System.out.print("context");System.out.println(System.currentTimeMillis() - start);
+			//start = System.currentTimeMillis();
 			MongoDBRepo.getInstance().writeJournal(rsj);
-			System.out.print("mondowrite");System.out.println(System.currentTimeMillis() - start);
+			//System.out.print("mondowrite");System.out.println(System.currentTimeMillis() - start);
 			references.clear();
 			figureContext.clear();
-			System.out.println("Wrote: "+rsj.getXMLPathComplete());
+			//System.out.println("Wrote: "+rsj.getXMLPathComplete());
 		}
 //		++i;
 //		if(i%1000==0)
 //        System.out.println("\n\n      #"+(i)+" DONE  -  XML Parse DONE   \n\n");
-		System.out.print("It took ");System.out.println(System.currentTimeMillis() - starting);
+		//System.out.print("It took ");System.out.println(System.currentTimeMillis() - starting);
 
     }
 
@@ -458,8 +458,8 @@ public class Main implements Text{
 
         String DOI = null;
         NodeList nodeList = node.getChildNodes();
-        for (int i = 0; i < nodeList.getLength(); i++) {
-            Node currentNode = nodeList.item(i);
+			for (int i = 0; i < nodeList.getLength(); i++) {
+				Node currentNode = nodeList.item(i);
             if(currentNode.getNodeName().equals("article-id"))
             {
             	ID id = new ID();

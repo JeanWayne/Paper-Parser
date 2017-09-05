@@ -156,7 +156,8 @@ public class MongoDBRepo {
                 try {
                     a.download();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
+                    System.out.println(a.getImageURL());
                 }
 
                 findings.add(new Document("findingID", a.getFindingID())
@@ -218,8 +219,14 @@ public class MongoDBRepo {
         d.append("findings",findings);
             d.append("numOfFindings",findings.size());
         d.append("path2file",rsj.getXMLPathComplete());
-
+        try{
         db.getCollection("hindawi_"+date).insertOne(d);
+        //try{
+          //  db.getCollection("hindawi_1503401197146").insertOne(d);
+        }catch(Exception e){
+            System.out.println(e);
+            System.out.println(rsj.getXMLPathComplete());
+        }
     }
 
 
