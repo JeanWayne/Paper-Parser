@@ -2,9 +2,6 @@
 import metadata.Author;
 import metadata.Citation;
 import metadata.ID;
-import net.sf.saxon.s9api.*;
-import net.sf.saxon.stax.XMLStreamWriterDestination;
-import net.sf.saxon.trans.XPathException;
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
@@ -24,15 +21,16 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
@@ -45,31 +43,50 @@ public class Main implements Text{
 	//TODO: Lösung für Formeln
 	//TODO: Automatisches Einfügen von Referenzen aus anderer Stelle im Text (hauptsächlich Copernicus)
 //	static final String location="c://Hindawi";
-	static final String location="E:\\Mittelset\\Hindawi";
+	static final String location="c://NOA_PAPERS/";
     static int i=0;
     static final String outputEncoding = "UTF-8";
-    //public static List<Result> resultTorso = new ArrayList<>();
-    public static List<ResultSetJournal> resultTorso = new ArrayList<>();
+    static final boolean VERBOSE=true;
+	static final String mongoIP="141.71.5.19";
+	static final int mongoPort=27017;
+	static final String mongoDataBase="beta";
+	static final boolean withDownload=false; //Download Images as binary data?
+	static final int outPutFormat=2; // 0=path, 1= current/overall, 2=percentage.
+
+
+	/*
+	* DATA HANDLING
+	*/
+	public static List<ResultSetJournal> resultTorso = new ArrayList<>();
 	public static HashMap figureContext = new HashMap();
 	public static HashMap references = new HashMap();
-	public static XsltExecutable xsltExecutable;
 	public static int withFormula=0;
 	public static int articles =0;
 	//public static int aufrufszahl =0;
+	public static long numberOfDocs=-1;
+	public static long currentDoc=0;
+	private static long startTime=0;
 
-    public static void main(String[] args) throws IOException, SaxonApiException
+	public static void main(String[] args) throws IOException
 
 	{
-        System.out.println("Start PaperParser");
+		generateNoaLabel();
+
+
+
+		System.out.println("Start PaperParser");
+        if(VERBOSE)
+		{	startTime=System.currentTimeMillis();
+			numberOfDocs= Files.walk(Paths.get(location))
+					.parallel()
+					.filter(p -> !p.toFile().isDirectory())
+					.count();
+			System.out.println("Parsing Papers from: "+location);
+			System.out.println("Saving it in MongoDB : "+mongoIP+":"+mongoPort +"   dbName:"+mongoDataBase);
+			System.out.println("Number of Documents overall: "+numberOfDocs);
+		}
  //       MongoDBRepo db = new MongoDBRepo();
 
-		try {
-			xsltExecutable= XSLTConvert.makeExecutable();
-		} catch (XPathException e) {
-			e.printStackTrace();
-
-
-		}
 		try(Stream<Path> paths = Files.walk(Paths.get(location))) {
             paths.forEach(yearPath -> {
                 if (Files.isRegularFile(yearPath))
@@ -93,9 +110,7 @@ public class Main implements Text{
                         e.printStackTrace();
                     } catch (SAXException e) {
                         e.printStackTrace();
-                    } catch (SaxonApiException e) {
-						e.printStackTrace();
-					} catch (XMLStreamException e) {
+                    } catch (XMLStreamException e) {
 						e.printStackTrace();
 					}
 				}
@@ -137,6 +152,44 @@ public class Main implements Text{
 
     }
 
+	public static int countFilesInDir(File folder, int count) {
+		File[] files = folder.listFiles();
+		for (File file: files) {
+			if (file.isFile()) {
+				count++;
+			} else {
+				countFilesInDir(file, count);
+			}
+		}
+
+		return count;
+	}
+	private static void generateNoaLabel()
+	{
+		System.out.println("888b    888  .d88888b.         d8888 ");
+		System.out.println("8888b   888 d88P\" \"Y88b       d88888 ");
+		System.out.println("88888b  888 888     888      d88P888 ");
+		System.out.println("888Y88b 888 888     888     d88P 888 ");
+		System.out.println("888 Y88b888 888     888    d88P  888 ");
+		System.out.println("888  Y88888 888     888   d88P   888 ");
+		System.out.println("888   Y8888 Y88b. .d88P  d8888888888 ");
+		System.out.println("888    Y888  \"Y88888P\"  d88P     888 ");
+		System.out.println();
+		System.out.println("8888888b.                                     8888888b.                   ");
+		System.out.println("888   Y88b                                    888   Y88b                  ");
+		System.out.println("888    888                                    888    888                  ");
+		System.out.println("888   d88P  8888b.  88888b.   .d88b.  888d888 888   d88P  8888b.  888d888 .d8888b   .d88b.  888d888 ");
+		System.out.println("8888888P\"      \"88b 888 \"88b d8P  Y8b 888P\"   8888888P\"      \"88b 888P\"   88K      d8P  Y8b 888P\"   ");
+		System.out.println("888        .d888888 888  888 88888888 888     888        .d888888 888     \"Y8888b. 88888888 888     ");
+		System.out.println("888        888  888 888 d88P Y8b.     888     888        888  888 888          X88 Y8b.     888     ");
+		System.out.println("888        \"Y888888 88888P\"   \"Y8888  888     888        \"Y888888 888      88888P'  \"Y8888  888     ");
+		System.out.println("                    888                                                   ");
+		System.out.println("                    888                                                   ");
+		System.out.println("                    888                                                   ");
+
+
+	}
+
 //	private static XsltExecutable compileXSLT() throws SaxonApiException {
 //		Processor processor = new Processor(false);
 //		XsltCompiler compiler= processor.newXsltCompiler();
@@ -156,7 +209,7 @@ public class Main implements Text{
 //		return executable;
 //	}
 
-	public static void parseXML(String xmlSource) throws IOException, ParserConfigurationException, SAXException, XMLStreamException, SaxonApiException {
+	public static void parseXML(String xmlSource) throws IOException, ParserConfigurationException, SAXException, XMLStreamException {
 		long starting = System.currentTimeMillis();
 
         ResultSetJournal rsj = new ResultSetJournal();
@@ -221,11 +274,25 @@ public class Main implements Text{
 			context(rsj);
 			//System.out.print("context");System.out.println(System.currentTimeMillis() - start);
 			//start = System.currentTimeMillis();
-			MongoDBRepo.getInstance().writeJournal(rsj);
+			MongoDBRepo.getInstance(mongoIP,mongoPort,mongoDataBase).writeJournal(rsj,withDownload);
 			//System.out.print("mondowrite");System.out.println(System.currentTimeMillis() - start);
 			references.clear();
 			figureContext.clear();
-			//System.out.println("Wrote: "+rsj.getXMLPathComplete());
+
+			if(VERBOSE) {
+				switch(outPutFormat){
+					case 0:
+						System.out.println("Wrote: " + rsj.getXMLPathComplete());
+						break;
+					case 1:
+						System.out.printf("%-10d / %-10d\n",++currentDoc,numberOfDocs);
+						break;
+					case 2:
+						System.out.println();
+						printProgress(startTime,numberOfDocs,++currentDoc);
+						break;
+				}
+			}
 		}
 //		++i;
 //		if(i%1000==0)
@@ -1205,51 +1272,6 @@ public class Main implements Text{
 
 
 	}
-
-
-	private static String convertFormula(Node startNode) throws SaxonApiException, XMLStreamException, ParserConfigurationException {
-
-		//Source streamSource = new StreamSource(xmlFile);
-    	//Document document = xmlFile;
-    	Source source = new DOMSource(startNode);
-
-		XsltTransformer transformer = xsltExecutable.load();
-
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-
-		XMLOutputFactory xmlOutputFactory = XMLOutputFactory.newFactory();
-
-		XMLStreamWriter xmlStreamWriter = xmlOutputFactory.createXMLStreamWriter(byteArrayOutputStream);
-
-		XMLStreamWriterDestination destination = new XMLStreamWriterDestination(xmlStreamWriter);
-
-		//DOMDestination domDestination = new DOMDestination(startNode);
-
-
-
-		transformer.setDestination(destination);
-
-		transformer.setSource(source);
-
-		transformer.transform();
-
-		transformer.close();
-
-
-		String tempTex = byteArrayOutputStream.toString();
-		Pattern pattern = Pattern.compile("mml2tex (.*?)\\?>");
-		Matcher matcher = pattern.matcher(tempTex);
-		if (matcher.find()){
-			tempTex = matcher.group(1);
-		}
-		else{
-			System.out.println("No match found: "+tempTex);
-		}
-//
-		return tempTex;
-
-	}
-
 	private static String getFormula(Node node) {
 
 		/*String formula= null;
@@ -1297,15 +1319,31 @@ public class Main implements Text{
 
 		}
 	}
-    public void resolveDOI()
-    {
 
-    }
+	private static void printProgress(long startTime, long total, long current) {
+		long eta = current == 0 ? 0 :
+				(total - current) * (System.currentTimeMillis() - startTime) / current;
 
-    public void save2db()
-    {
+		String etaHms = current == 0 ? "N/A" :
+				String.format("%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(eta),
+						TimeUnit.MILLISECONDS.toMinutes(eta) % TimeUnit.HOURS.toMinutes(1),
+						TimeUnit.MILLISECONDS.toSeconds(eta) % TimeUnit.MINUTES.toSeconds(1));
 
-    }
+		StringBuilder string = new StringBuilder(140);
+		int percent = (int) (current * 100 / total);
+		string
+				.append('\r')
+				.append(String.join("", Collections.nCopies(percent == 0 ? 2 : 2 - (int) (Math.log10(percent)), " ")))
+				.append(String.format(" %d%% [", percent))
+				.append(String.join("", Collections.nCopies(percent, "=")))
+				.append('>')
+				.append(String.join("", Collections.nCopies(100 - percent, " ")))
+				.append(']')
+				.append(String.join("", Collections.nCopies((int) (Math.log10(total)) - (int) (Math.log10(current)), " ")))
+				.append(String.format(" %d/%d, ETA: %s", current, total, etaHms));
+
+		System.out.print(string);
+	}
 
 	@Override
 	public Text splitText(int i) throws DOMException {

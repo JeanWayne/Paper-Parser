@@ -25,18 +25,28 @@ public class MongoDBRepo {
     private static MongoClient mongoClient;
     private static String date;
     private MongoDBRepo () {}
+    private static String IP;
 
     public static MongoDBRepo getInstance ()
     {
+        if(IP == null && MongoDBRepo.getInstance()==null)
+            throw new IllegalArgumentException("getInstance must be invoked with an Parameters first");
+        else
+            return MongoDBRepo.instance;
+    }
+    public static MongoDBRepo getInstance (String IP,int Port, String databaseName)
+    {
+
         if (MongoDBRepo.instance == null) {
             MongoDBRepo.instance = new MongoDBRepo();
-//            MongoDBRepo.mongoClient = new MongoClient("141.71.5.19", 27017);
-            MongoDBRepo.mongoClient = new MongoClient("127.0.0.1", 27017);
-            MongoDBRepo.db = mongoClient.getDatabase("workshop");
-            date=System.currentTimeMillis()+"";
+            MongoDBRepo.mongoClient = new MongoClient(IP,Port);
+//            MongoDBRepo.mongoClient = new MongoClient("127.0.0.1", 27017);
+            MongoDBRepo.db = mongoClient.getDatabase(databaseName);
+            date = System.currentTimeMillis() + "";
         }
-        return MongoDBRepo.instance;
+            return MongoDBRepo.instance;
     }
+
 
     public void write(String journal,String graphicID, String captionBody, String captionTitle,byte[] image)
     {
@@ -45,7 +55,7 @@ public class MongoDBRepo {
         db.getCollection("plos").insertOne(d);
     }
 
-    public void writeJournal(ResultSetJournal rsj) {
+    public void writeJournal(ResultSetJournal rsj,boolean withDownload) {
         Document d = new Document("journalName", rsj.getJournalName());
         List<Document> Authors = new ArrayList<>();
         List<Document> Editors = new ArrayList<>();
@@ -137,7 +147,7 @@ public class MongoDBRepo {
 
             a.setImageURL(s);
 
-            boolean downloading = true;
+            boolean downloading = withDownload;
 
             int lengthOfTitle = 0;
 
