@@ -55,6 +55,12 @@ public class MongoDBRepo {
         db.getCollection("plos").insertOne(d);
     }
 
+    public void writeError(String Path,String ExceptionText)
+	{
+		Document d = new Document("Exception",ExceptionText);
+		d.append("path2file",Path);
+		db.getCollection("hindawi_"+date).insertOne(d);
+	}
     public void writeJournal(ResultSetJournal rsj,boolean withDownload) {
         Document d = new Document("journalName", rsj.getJournalName());
         List<Document> Authors = new ArrayList<>();
@@ -257,7 +263,7 @@ public class MongoDBRepo {
         d.append("Year",Year).append("DOI",DOI).append("findingID",findingID).append("captionBody",captionBody).append("ImageURL",imageURL).append("Authors",Authors).append("Editor",Editors);
         db.getCollection("hindawi_"+date).insertOne(d);
     }
-
+	@Deprecated
     public void writeError(String error)
     {
         Document d = new Document("Error", error);

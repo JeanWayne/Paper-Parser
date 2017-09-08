@@ -250,6 +250,7 @@ public class Main implements Text{
 			try {
 				document = docBuilder.parse(new File(xmlSource));
 			} catch (Exception e) {
+				MongoDBRepo.getInstance(mongoIP,mongoPort,mongoDataBase).writeError(xmlSource,e.toString());
 				System.out.println("Could not been read: " + xmlSource + "\n" + e);
 				rsj.setError(xmlSource + ":   " + e);
 				document = null;
@@ -1126,56 +1127,54 @@ public class Main implements Text{
     }
 
 	private static void getCitation(Node citationNode, Citation citation) {
-		NodeList citationPartList = citationNode.getChildNodes();
-		if(citation.getText()==null){
-			citation.setText(getContentNoWhiteSpace(citationNode));
+		try {
+			NodeList citationPartList = citationNode.getChildNodes();
+			if (citation.getText() == null) {
+				citation.setText(getContentNoWhiteSpace(citationNode));
 
-		}
-
-		for (int j=0; j<citationPartList.getLength(); j++){
-			Node citationPart = citationPartList.item(j);
-
-			if(citationPart.getNodeName().matches("mixed-citation|BibUnstructured")){
-				citation.setText(citationPart.getTextContent().trim());
 			}
-				if(citationPart.getNodeName().matches("BibAuthorName|name")){
+
+			for (int j = 0; j < citationPartList.getLength(); j++) {
+				Node citationPart = citationPartList.item(j);
+
+				if (citationPart.getNodeName().matches("mixed-citation|BibUnstructured")) {
+					citation.setText(citationPart.getTextContent().trim());
+				}
+				if (citationPart.getNodeName().matches("BibAuthorName|name")) {
 					Author author = new Author();
-						for (int h=0; h<citationPart.getChildNodes().getLength(); h++) {
-							if (citationPart.getChildNodes().item(h).getNodeName().matches("FamilyName|given-names"))
-								if (author.getLastName()==null){
-									author.setLastName(citationPart.getChildNodes().item(h).getTextContent());
-								}
-								else{
-									author.setLastName(author.getLastName()+ " "+citationPart.getChildNodes().item(h).getTextContent());
-								}
+					for (int h = 0; h < citationPart.getChildNodes().getLength(); h++) {
+						if (citationPart.getChildNodes().item(h).getNodeName().matches("FamilyName|given-names"))
+							if (author.getLastName() == null) {
+								author.setLastName(citationPart.getChildNodes().item(h).getTextContent());
+							} else {
+								author.setLastName(author.getLastName() + " " + citationPart.getChildNodes().item(h).getTextContent());
+							}
 
 
-							if (citationPart.getChildNodes().item(h).getNodeName().matches("GivenName|Initials|surname"))
-								if (author.getFirstName()==null){
-									author.setFirstName(citationPart.getChildNodes().item(h).getTextContent());
-								}
-								else{
-									author.setFirstName(author.getFirstName()+ " "+citationPart.getChildNodes().item(h).getTextContent());
-								}
+						if (citationPart.getChildNodes().item(h).getNodeName().matches("GivenName|Initials|surname"))
+							if (author.getFirstName() == null) {
+								author.setFirstName(citationPart.getChildNodes().item(h).getTextContent());
+							} else {
+								author.setFirstName(author.getFirstName() + " " + citationPart.getChildNodes().item(h).getTextContent());
+							}
 
 
-
-						}
-					if(author.getFirstName()!=null&&author.getLastName()!=null)
+					}
+					if (author.getFirstName() != null && author.getLastName() != null)
 						citation.getAuthors().add(author);
 
-				}else if(citationPart.getNodeName().matches("ArticleTitle|article-title")){
+				} else if (citationPart.getNodeName().matches("ArticleTitle|article-title")) {
 					citation.setTitle(citationPart.getTextContent().trim());
-				}else if(citationPart.getNodeName().matches("Year|year")){
+				} else if (citationPart.getNodeName().matches("Year|year")) {
 					citation.setYear(citationPart.getTextContent().trim());
-				}else if(citationPart.getNodeName().matches("JournalTitle|source")){
+				} else if (citationPart.getNodeName().matches("JournalTitle|source")) {
 					citation.setJournal(citationPart.getTextContent().trim());
-				}else if(citationPart.getNodeName().matches("Handle")){
+				} else if (citationPart.getNodeName().matches("Handle")) {
 					ID id = new ID();
 					id.setNumber(citationPart.getTextContent().trim());
 					id.setType(citationPart.getParentNode().getAttributes().item(0).getNodeValue());
 					citation.getIDs().add(id);
-				}else if(citationPart.getNodeName().matches("pub-id")){
+				} else if (citationPart.getNodeName().matches("pub-id")) {
 					ID id = new ID();
 					id.setType(citationPart.getAttributes().item(0).getNodeValue());
 					id.setNumber(citationPart.getTextContent().trim());
@@ -1184,9 +1183,14 @@ public class Main implements Text{
 				}
 
 
-			if (citationPart.getNodeType() == Node.ELEMENT_NODE) {
-				getCitation(citationPart, citation);
+				if (citationPart.getNodeType() == Node.ELEMENT_NODE) {
+					getCitation(citationPart, citation);
+				}
+
 			}
+		}
+		catch(Exception e)
+		{
 
 		}
 	}
@@ -1195,81 +1199,75 @@ public class Main implements Text{
 	private static String getContentNoWhiteSpace(Node node){
 		//if (Text.isElementContentWhitespace)
 		//long start = System.currentTimeMillis();
+		try {
+			String content = "";
 
-    	String content = "";
+			//node.getIs
 
-		//node.getIs
+			if (node.getNodeName().matches("inline-formula|disp-formula")) {
 
-		if (node.getNodeName().matches("inline-formula|disp-formula")) {
-
-			if (node.getParentNode().getNodeName().matches("Caption|caption|article-title|ArticleTitle")) {
-				content += getFormula(node);
-			} else if (node.getParentNode().getParentNode().getNodeName().matches("Caption|caption")) {
-				content += getFormula(node);
-			} else if (node.getParentNode().getParentNode().getParentNode().getNodeName().matches("Caption|caption")) {
-				content += getFormula(node);
-			} else if (node.getAttributes().getNamedItem("ref-type") != null) {
-				if (node.getAttributes().getNamedItem("ref-type").getTextContent().equals("fig")) {
+				if (node.getParentNode().getNodeName().matches("Caption|caption|article-title|ArticleTitle")) {
 					content += getFormula(node);
-				}
-			} else {
-				content += node.getTextContent().replaceAll("\n", "").replaceAll("\t", "").trim();
-			}
-
-
-		}else if(node.getNodeName().equals("sub")) {
-			content += ("<sub>" + node.getTextContent() + "</sub>");
-
-		}
-		else if(node.getNodeName().equals("sup")) {
-			content += ("<sup>" + node.getTextContent() + "</sup>");
-
-		}else if (node.getNodeName().matches("Heading|title")) {
-			content += (node.getTextContent() + "\n");
-
-		} else if (node.getNodeName().matches("Para|p")) {
-			NodeList childNodes = node.getChildNodes();
-			for (int g = 0; g < childNodes.getLength(); g++) {
-				Node child = childNodes.item(g);
-				content += getContentNoWhiteSpace(child);
-			}
-			content += "\n";
-		}
-
-		else if (node.hasChildNodes())
-		{
-			NodeList childNodes = node.getChildNodes();
-			for (int g= 0; g<childNodes.getLength(); g++)
-			{
-				Node child= childNodes.item(g);
-				content +=getContentNoWhiteSpace(child);
-			}
-		}
-
-		else if (node.getNodeName().equals("xref")){
-					if (node.getParentNode().getNodeName().equals("article-title")){
-
-					}else{
-						content+=(" "+references.get(node.getAttributes().getNamedItem("rid").getTextContent())+" ");
-
+				} else if (node.getParentNode().getParentNode().getNodeName().matches("Caption|caption")) {
+					content += getFormula(node);
+				} else if (node.getParentNode().getParentNode().getParentNode().getNodeName().matches("Caption|caption")) {
+					content += getFormula(node);
+				} else if (node.getAttributes().getNamedItem("ref-type") != null) {
+					if (node.getAttributes().getNamedItem("ref-type").getTextContent().equals("fig")) {
+						content += getFormula(node);
 					}
-		}
+				} else {
+					content += node.getTextContent().replaceAll("\n", "").replaceAll("\t", "").trim();
+				}
 
-		else if (node.getNodeType()==Node.TEXT_NODE)
-		{
+
+			} else if (node.getNodeName().equals("sub")) {
+				content += ("<sub>" + node.getTextContent() + "</sub>");
+
+			} else if (node.getNodeName().equals("sup")) {
+				content += ("<sup>" + node.getTextContent() + "</sup>");
+
+			} else if (node.getNodeName().matches("Heading|title")) {
+				content += (node.getTextContent() + "\n");
+
+			} else if (node.getNodeName().matches("Para|p")) {
+				NodeList childNodes = node.getChildNodes();
+				for (int g = 0; g < childNodes.getLength(); g++) {
+					Node child = childNodes.item(g);
+					content += getContentNoWhiteSpace(child);
+				}
+				content += "\n";
+			} else if (node.hasChildNodes()) {
+				NodeList childNodes = node.getChildNodes();
+				for (int g = 0; g < childNodes.getLength(); g++) {
+					Node child = childNodes.item(g);
+					content += getContentNoWhiteSpace(child);
+				}
+			} else if (node.getNodeName().equals("xref")) {
+				if (node.getParentNode().getNodeName().equals("article-title")) {
+
+				} else {
+					content += (" " + references.get(node.getAttributes().getNamedItem("rid").getTextContent()) + " ");
+
+				}
+			} else if (node.getNodeType() == Node.TEXT_NODE) {
 
 				String content1 = node.getNodeValue().replaceAll("\n", " ").replaceAll("\t", " ").trim();
-				if (!(content1.endsWith(" "))){
-					content1+=" ";
+				if (!(content1.endsWith(" "))) {
+					content1 += " ";
 				}
-				content+=content1;
+				content += content1;
+
+			}
+			//if((System.currentTimeMillis() - start)>10)
+			//System.out.println(System.currentTimeMillis() - start);
+			return (content.trim().replaceAll("\\s+", " ") + " ");
+		}
+		catch(Exception e)
+		{
 
 		}
-		//if((System.currentTimeMillis() - start)>10)
-		//System.out.println(System.currentTimeMillis() - start);
-		return (content.trim().replaceAll("\\s+", " ")+" ");
-
-
+		return "Error";
 
 	}
 	private static String getFormula(Node node) {
