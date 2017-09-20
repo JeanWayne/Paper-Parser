@@ -991,16 +991,18 @@ public class Main implements Text{
 					}
 
 			}
-			if (currentNode.getNodeName().matches("inline-formula|disp-formula")) {
+			try {
+				if (currentNode.getNodeName().matches("inline-formula|disp-formula")) {
 
-				if (node.getParentNode().getNodeName().matches("Caption|caption")) {
-					rsj.setHasFormula(true);
-				} else if (node.getParentNode().getParentNode().getNodeName().matches("Caption|caption")) {
-					rsj.setHasFormula(true);
-				} else if (node.getParentNode().getParentNode().getParentNode().getNodeName().matches("Caption|caption")) {
-					rsj.setHasFormula(true);
+					if (node.getParentNode().getNodeName().matches("Caption|caption")) {
+						rsj.setHasFormula(true);
+					} else if (node.getParentNode().getParentNode().getNodeName().matches("Caption|caption")) {
+						rsj.setHasFormula(true);
+					} else if (node.getParentNode().getParentNode().getParentNode().getNodeName().matches("Caption|caption")) {
+						rsj.setHasFormula(true);
+					}
 				}
-			}
+
 			if(currentNode.getNodeName().matches("ref|Citation")){
 				Citation citation = new Citation();
 				getCitation(currentNode, citation);
@@ -1123,6 +1125,11 @@ public class Main implements Text{
                 //calls this method for all the children which is Element
                 doSomething(rsj, currentNode);
             }
+			}
+			catch(Exception e)
+			{
+			  //TODO
+			}
         }
     }
 
