@@ -826,6 +826,56 @@ public class Main implements Text{
 					}
 				}
 			}
+				if(currentNode.getNodeName().matches("pub-date|OnlineDate")){
+
+					if ((rsj.getFullDate()!=null)) {
+						System.out.println("DAtum, aber kein Tag");
+						NodeList children = currentNode.getChildNodes();
+						metadata.PublicationDate date = new metadata.PublicationDate();
+						for (int m = 0; m < children.getLength(); m++) {
+							Node childNode = children.item(m);
+
+
+							if (childNode.getNodeName().equals("day")) {
+								if(rsj.getFullDate().getDay()==null){
+									date.setDay(childNode.getTextContent());
+								}
+							}
+							if (childNode.getNodeName().equals("month")) {
+								if(rsj.getFullDate().getMonth()==null){
+									date.setMonth(childNode.getTextContent());
+								}
+							}
+							if (childNode.getNodeName().equals("year")) {
+								if(rsj.getFullDate().getYear()==null){
+									date.setYear(childNode.getTextContent());
+								}
+							}
+						}
+						rsj.setFullDate(date);
+					}
+					else if(rsj.getFullDate()==null){
+
+						NodeList children = currentNode.getChildNodes();
+						metadata.PublicationDate date = new metadata.PublicationDate();
+						for (int m = 0; m < children.getLength(); m++) {
+							Node childNode = children.item(m);
+
+
+							if (childNode.getNodeName().matches("[Dd]ay")) {
+								date.setDay(childNode.getTextContent());
+							}
+							if (childNode.getNodeName().matches("[Mm]onth")) {
+								date.setMonth(childNode.getTextContent());
+							}
+							if (childNode.getNodeName().matches("[Yy]ear")) {
+								date.setYear(childNode.getTextContent());
+							}
+						}
+						rsj.setFullDate(date);
+					}
+					System.out.println(rsj.getFullDate().toString());
+				}
             if(currentNode.getNodeName().equals("publication-year")|| currentNode.getNodeName().matches("[Yy]ear"))
             {
 
