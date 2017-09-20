@@ -57,7 +57,7 @@ public class MongoDBRepo {
         db.getCollection("plos").insertOne(d);
     }
 
-    public void writeError(String Path,String ExceptionText)
+    public void writeError(String Path,String ExceptionText, String modus)
 	{
 		Document d = new Document("Exception",ExceptionText);
 		d.append("path2file",Path);
@@ -248,6 +248,7 @@ public class MongoDBRepo {
         d.append("Bibliography", Bibliography);
         d.append("IDList",IDList);
         d.append("PublicationDate", pdate);
+        d.append("formula", rsj.hasFormula);
 
         if(rsj.getAbstract()!=null)
             d.append("abstractLenght",rsj.getAbstract().length());
