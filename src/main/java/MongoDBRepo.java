@@ -17,6 +17,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MongoDBRepo {
 
@@ -101,7 +103,13 @@ public class MongoDBRepo {
             rsj.setPublicationYear(rsj.getXMLPathYear());
             d.append("year", rsj.getXMLPathYear());
         }
-
+        metadata.PublicationDate publicationDate = rsj.getFullDate();
+        Document pdate;
+        try{
+            pdate=(new Document("day", publicationDate.getDay()).append("month", publicationDate.getMonth()).append("year", publicationDate.getYear()) );
+        } catch (Exception e){
+            pdate=null;
+        }
 
         Boolean tested= false;
 
@@ -112,11 +120,31 @@ public class MongoDBRepo {
                 System.out.println("_____________________________________________");
 
             String s = "";
+
             //System.out.println(rsj.getJournalDOI());
             if (rsj.getXMLPathComplete().contains("PMC")) {
                 s = "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC" + rsj.getPmcID() + "/bin/" + a.getGraphicDOI() + ".jpg";
             } else if (rsj.getXMLPathComplete().matches(".*[hH]indawi.*")) {
-                s = "https://www.hindawi.com/journals/" + rsj.getPublisherId() + "/" + rsj.getPublicationYear() + "/" + a.getGraphicDOI() + ".jpg";
+
+                String link = a.getGraphicDOI();
+                if(link==null)link="0";
+                Matcher matcher = Pattern.compile("\\d+\\.(.*)").matcher(link);
+                String figID;
+                try {
+                    matcher.find();
+                    figID = matcher.group(1);
+                }
+                catch (Exception e){
+                    figID="0";
+                }
+                String doi = rsj.getJournalDOI();
+                matcher = Pattern.compile(".?\\/(.*)").matcher(doi);
+                try {
+                    matcher.find();
+                    link = matcher.group(1)+"."+figID;                }catch (Exception e){
+                    link="no valid URL found";
+                }
+                s = "https://www.hindawi.com/journals/" + rsj.getPublisherId() +  "/" +link + ".jpg";
                 if (!tested) {
                     try {
                         URL hindawiTest = new URL(s);
@@ -137,9 +165,7 @@ public class MongoDBRepo {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                }
-
-            } else if (rsj.getXMLPathComplete().matches(".*[sS]pringer.*")) {
+                }            }  else if (rsj.getXMLPathComplete().matches(".*[sS]pringer.*")) {
 
                 String newDoi = rsj.getJournalDOI().substring(0, 7) + "%2F" + rsj.getJournalDOI().substring(8);
                 s = "https://static-content.springer.com/image/art%3A" + newDoi + "/" + a.getGraphicDOI();
@@ -161,18 +187,18 @@ public class MongoDBRepo {
 
             if (a.getCaptionTitle() != null)
 
-                lengthOfTitle = a.getCaptionTitle().length();
+                    lengthOfTitle = a.getCaptionTitle().length();
 
-            if (a.getCaptionBody() != null)
+                    if (a.getCaptionBody() != null)
 
-                lengthOfBody = a.getCaptionBody().length();
+                        lengthOfBody = a.getCaptionBody().length();
 
-            if (downloading) {
+                    if (downloading) {
 
-                try {
-                    a.download();
-                } catch (IOException e) {
-                    //e.printStackTrace();
+                        try {
+                            a.download();
+                        } catch (IOException e) {
+                            //e.printStackTrace();
                     System.out.println(a.getImageURL());
                 }
 
@@ -221,6 +247,7 @@ public class MongoDBRepo {
         d.append("Copyright Holder", rsj.getCopyrightHolder());
         d.append("Bibliography", Bibliography);
         d.append("IDList",IDList);
+        d.append("PublicationDate", pdate);
 
         if(rsj.getAbstract()!=null)
             d.append("abstractLenght",rsj.getAbstract().length());
