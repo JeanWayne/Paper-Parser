@@ -43,7 +43,7 @@ public class Main implements Text{
 	//TODO: Lösung für Formeln
 	//TODO: Automatisches Einfügen von Referenzen aus anderer Stelle im Text (hauptsächlich Copernicus)
 //	static final String location="c://Hindawi";
-	static final String location="c://NOA_PAPERS/";
+	static final String location="E:\\Mittelset";
     static int i=0;
     static final String outputEncoding = "UTF-8";
     static final boolean VERBOSE=true;
@@ -250,7 +250,7 @@ public class Main implements Text{
 			try {
 				document = docBuilder.parse(new File(xmlSource));
 			} catch (Exception e) {
-				MongoDBRepo.getInstance(mongoIP,mongoPort,mongoDataBase).writeError(xmlSource,e.toString());
+				MongoDBRepo.getInstance(mongoIP,mongoPort,mongoDataBase).writeError(xmlSource,e.toString(), "modus");
 				System.out.println("Could not been read: " + xmlSource + "\n" + e);
 				rsj.setError(xmlSource + ":   " + e);
 				document = null;
@@ -829,7 +829,6 @@ public class Main implements Text{
 				if(currentNode.getNodeName().matches("pub-date|OnlineDate")){
 
 					if ((rsj.getFullDate()!=null)) {
-						System.out.println("DAtum, aber kein Tag");
 						NodeList children = currentNode.getChildNodes();
 						metadata.PublicationDate date = new metadata.PublicationDate();
 						for (int m = 0; m < children.getLength(); m++) {
@@ -874,7 +873,6 @@ public class Main implements Text{
 						}
 						rsj.setFullDate(date);
 					}
-					System.out.println(rsj.getFullDate().toString());
 				}
             if(currentNode.getNodeName().equals("publication-year")|| currentNode.getNodeName().matches("[Yy]ear"))
             {
@@ -950,9 +948,11 @@ public class Main implements Text{
 						String textContent=currentNode.getTextContent();
 						Pattern pattern = Pattern.compile("Fig\\.\\u00A0(\\d+)");
 						Matcher matcher = pattern.matcher((textContent));
+						String figID="";
 						while(matcher.find()){
 							match=true;
 								keys.add((key+matcher.group(1)));
+								 figID = matcher.group();
 								//System.out.println(matcher.group(1));
 						}
 						if(match){
@@ -962,17 +962,16 @@ public class Main implements Text{
 									if (figureContext.get(keys.get(l))==null) {
 
 										value = new ArrayList<>();
-										value.add(getContentNoWhiteSpace(currentNode));
+										value.add(getContentNoWhiteSpace(currentNode, figID));
 										figureContext.put(keys.get(l), value);
 									}else{
 										value = (List<String>) figureContext.get(keys.get(l));
-										String container = getContentNoWhiteSpace(currentNode);
+										String container = getContentNoWhiteSpace(currentNode, figID);
 										if(!value.contains(container)){
-											value.add(getContentNoWhiteSpace(currentNode));
+											value.add(getContentNoWhiteSpace(currentNode, figID));
 										}
 											figureContext.put(keys.get(l), value);
 										}
-
 
 								}
 
@@ -981,8 +980,8 @@ public class Main implements Text{
 						}
 
 					}
-
 				}
+
 			}
 			if(currentNode.getNodeName().matches("xref|InternalRef"))
 			{
@@ -996,13 +995,13 @@ public class Main implements Text{
 						List<String> value = new ArrayList<>();
 						if (figureContext.get(key)==null){
 							value = new ArrayList<>();
-							value.add(getContentNoWhiteSpace(currentNode.getParentNode()));
+							value.add(getContentNoWhiteSpace(currentNode.getParentNode(), key));
 							figureContext.put(key, value);
 						}
 						else{
 							value = (List<String>) figureContext.get(key);
-							if(!value.contains(getContentNoWhiteSpace(currentNode.getParentNode()))){
-								value.add(getContentNoWhiteSpace(currentNode.getParentNode()));
+							if(!value.contains(getContentNoWhiteSpace(currentNode.getParentNode(), key))){
+								value.add(getContentNoWhiteSpace(currentNode.getParentNode(), key));
 							}
 							figureContext.put(key, value);
 						}
@@ -1024,13 +1023,13 @@ public class Main implements Text{
 						List<String> value = new ArrayList<>();
 						if (figureContext.get(key)==null){
 							value = new ArrayList<>();
-							value.add(getContentNoWhiteSpace(currentNode.getParentNode()));
+							value.add(getContentNoWhiteSpace(currentNode.getParentNode(), key));
 							figureContext.put(key, value);
 						}
 						else{
 							value = (List<String>) figureContext.get(key);
-							if(!value.contains(getContentNoWhiteSpace(currentNode.getParentNode()))){
-								value.add(getContentNoWhiteSpace(currentNode.getParentNode()));
+							if(!value.contains(getContentNoWhiteSpace(currentNode.getParentNode(), key))){
+								value.add(getContentNoWhiteSpace(currentNode.getParentNode(), key));
 							}
 							figureContext.put(key, value);
 						}
@@ -1183,6 +1182,114 @@ public class Main implements Text{
         }
     }
 
+	private static String getContentNoWhiteSpace(Node node, String key) {
+
+			String content = "";
+
+			//node.getIs
+
+			/*if (node.getNodeName().matches("inline-formula|disp-formula")) {
+
+				if (node.getParentNode().getNodeName().matches("Caption|caption|article-title|ArticleTitle")) {
+					content += getFormula(node);
+				} else if (node.getParentNode().getParentNode().getNodeName().matches("Caption|caption")) {
+					content += getFormula(node);
+				} else if (node.getParentNode().getParentNode().getParentNode().getNodeName().matches("Caption|caption")) {
+					content += getFormula(node);
+				} else if (node.getAttributes().getNamedItem("ref-type") != null) {
+					if (node.getAttributes().getNamedItem("ref-type").getTextContent().equals("fig")) {
+						content += getFormula(node);
+					}
+				} else {
+					content += node.getTextContent().replaceAll("\n", "").replaceAll("\t", "").trim();
+				}
+
+
+			}else  if (node.getNodeName().equals("sub")) {
+				content += ("<sub>" + node.getTextContent() + "</sub>");
+
+			} else if (node.getNodeName().equals("sup")) {
+				content += ("<sup>" + node.getTextContent() + "</sup>");
+
+
+			} else*/ if (node.getNodeName().matches("Para|p")) {
+				NodeList childNodes = node.getChildNodes();
+				for (int g = 0; g < childNodes.getLength(); g++) {
+					Node child = childNodes.item(g);
+					try{
+						content += getContentNoWhiteSpace(child, key).replaceAll(key,("#figure#"));
+					}catch (Exception e){
+						//System.out.println("paragraph fehler.");
+					}
+				}
+				content += "\n";
+
+			} else if (node.getNodeName().matches("xref|InternalRef")) {
+
+					try {
+						if (node.getAttributes().getNamedItem("ref-type").getTextContent().equals("fig")){
+							if (node.getAttributes().getNamedItem("rid").getTextContent().equals(key)) {
+								content += "#figure#";
+
+							}
+                        }else{
+							content += (" " + references.get(node.getAttributes().getNamedItem("rid").getTextContent()) + " ");
+						}
+
+					} catch (Exception e) {
+						//e.printStackTrace();
+						//System.out.println("ref-type");
+					}
+					try {
+						if(node.getAttributes().getNamedItem("RefID").getTextContent().startsWith("Fig")){
+							if (node.getAttributes().getNamedItem("RefID").getTextContent().equals(key)) {
+								content += "#figure#";
+
+							}
+                        }else{
+							content += (" " + references.get(node.getAttributes().getNamedItem("rid").getTextContent()) + " ");
+						}
+					} catch (Exception e) {
+						//e.printStackTrace();
+						//System.out.println("RefID");
+					}
+
+
+
+			} else if (node.hasChildNodes()) {
+				NodeList childNodes = node.getChildNodes();
+				for (int g = 0; g < childNodes.getLength(); g++) {
+					Node child = childNodes.item(g);
+					try{
+						content += getContentNoWhiteSpace(child, key);
+					}catch (Exception e){
+						//System.out.println("child nodes");
+					}
+				}
+			} else if (node.getNodeType() == Node.TEXT_NODE) {
+
+				String content1 = node.getNodeValue().replaceAll("\n", " ").replaceAll("\t", " ").trim();
+				if (!(content1.endsWith(" "))) {
+					content1 += " ";
+				}
+				content += content1;
+
+			}
+			//if((System.currentTimeMillis() - start)>10)
+			//System.out.println(System.currentTimeMillis() - start);
+			return (content.trim().replaceAll("\\s+", " ") + " ");
+
+		/*catch(Exception e)
+		{
+			e.printStackTrace();
+			e.getStackTrace()[0].getLineNumber();
+			System.out.println("Fehler bei getContentNowhiteSpace von Context");
+		}*/
+		//return "Error";
+
+
+	}
+
 	private static void getCitation(Node citationNode, Citation citation) {
 		try {
 			NodeList citationPartList = citationNode.getChildNodes();
@@ -1294,12 +1401,7 @@ public class Main implements Text{
 					content += getContentNoWhiteSpace(child);
 				}
 				content += "\n";
-			} else if (node.hasChildNodes()) {
-				NodeList childNodes = node.getChildNodes();
-				for (int g = 0; g < childNodes.getLength(); g++) {
-					Node child = childNodes.item(g);
-					content += getContentNoWhiteSpace(child);
-				}
+
 			} else if (node.getNodeName().equals("xref")) {
 				if (node.getParentNode().getNodeName().equals("article-title")) {
 
@@ -1307,7 +1409,13 @@ public class Main implements Text{
 					content += (" " + references.get(node.getAttributes().getNamedItem("rid").getTextContent()) + " ");
 
 				}
-			} else if (node.getNodeType() == Node.TEXT_NODE) {
+			}  else if (node.hasChildNodes()) {
+				NodeList childNodes = node.getChildNodes();
+				for (int g = 0; g < childNodes.getLength(); g++) {
+					Node child = childNodes.item(g);
+					content += getContentNoWhiteSpace(child);
+				}
+			}else if (node.getNodeType() == Node.TEXT_NODE) {
 
 				String content1 = node.getNodeValue().replaceAll("\n", " ").replaceAll("\t", " ").trim();
 				if (!(content1.endsWith(" "))) {
@@ -1372,6 +1480,7 @@ public class Main implements Text{
 			else
 				rsj.resultList.get(i).setContext((List<String>) figureContext.get(rsj.resultList.get(i).figGroupID));
 
+			//System.out.println(rsj.resultList.get(i).figID+rsj.resultList.get(i).getContext());
 		}
 	}
 
