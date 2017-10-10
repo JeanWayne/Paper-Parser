@@ -43,7 +43,7 @@ public class Main implements Text{
 	//TODO: Lösung für Formeln
 	//TODO: Automatisches Einfügen von Referenzen aus anderer Stelle im Text (hauptsächlich Copernicus)
 //	static final String location="c://Hindawi";
-	static final String location="E:\\Mittelset";
+	static final String location="C:\\Users\\SohmenL\\Downloads\\testdocs";
     static int i=0;
     static final String outputEncoding = "UTF-8";
     static final boolean VERBOSE=true;
@@ -275,11 +275,11 @@ public class Main implements Text{
 			context(rsj);
 			//System.out.print("context");System.out.println(System.currentTimeMillis() - start);
 			//start = System.currentTimeMillis();
-			MongoDBRepo.getInstance(mongoIP,mongoPort,mongoDataBase).writeJournal(rsj,withDownload);
+			//MongoDBRepo.getInstance(mongoIP,mongoPort,mongoDataBase).writeJournal(rsj,withDownload);
 			//System.out.print("mondowrite");System.out.println(System.currentTimeMillis() - start);
 			references.clear();
 			figureContext.clear();
-
+			System.out.println("Wrote: " + rsj.getXMLPathComplete());
 			if(VERBOSE) {
 				switch(outPutFormat){
 					case 0:
@@ -306,23 +306,28 @@ public class Main implements Text{
     	NodeList nodeList = node.getChildNodes();
 		for (int i = 0; i < nodeList.getLength(); i++) {
 			Node currentNode = nodeList.item(i);
+
 				if (currentNode.getNodeName().equals("xref")&&!currentNode.hasChildNodes()){
-					String key= currentNode.getAttributes().getNamedItem("rid").getTextContent();
-					//System.out.println(key);
-					String value = findReference(key, root);
-					if (value==null){
-						Matcher matcher = Pattern.compile("\\d+").matcher(key);
-						String m="";
-						while(matcher.find()){
-							m=matcher.group();
-						}
-						value=m;
-						//System.out.println(m);
+					try {
+						String key= currentNode.getAttributes().getNamedItem("rid").getTextContent();
+						//System.out.println(key);
+						String value = findReference(key, root);
+						if (value==null){
+                            Matcher matcher = Pattern.compile("\\d+").matcher(key);
+                            String m="";
+                            while(matcher.find()){
+                                m=matcher.group();
+                            }
+                            value=m;
+                            //System.out.println(m);
+                        }
+						if (value!=null) {
+                            references.put(key, value);
+                        }
+					} catch (Exception e) {
+						e.printStackTrace();
 					}
-					if (value!=null) {
-						references.put(key, value);
-					}
-			}
+				}
 			if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
 				//calls this method for all the children which is Element
 				mapReferences(rsj, currentNode, root);
