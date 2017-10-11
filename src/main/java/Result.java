@@ -182,6 +182,8 @@ public class Result
 
 //				}
 
+		}else{
+			MongoDBRepo.getInstance().writeError("404");
 		}
 
 	}

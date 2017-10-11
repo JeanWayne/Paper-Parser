@@ -3,6 +3,7 @@ import lombok.Setter;
 import metadata.Author;
 import metadata.Citation;
 import metadata.ID;
+import metadata.PublicationDate;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -43,4 +44,5 @@ public class ResultSetJournal
 	List <Citation> Bibliography = new ArrayList<>();
 	List<ID> IDs = new ArrayList<>();
 	List<Result> resultList = new ArrayList<>();
+	PublicationDate fullDate;
 }

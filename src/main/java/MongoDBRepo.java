@@ -203,7 +203,7 @@ public class MongoDBRepo {
                 }
 
                 findings.add(new Document("findingID", a.getFindingID())
-                        .append("captionTitle", a.getCaptionTitle())
+                        .append("captionTitle", a.getLabel())
                         .append("captionBody", a.getCaptionBody())
                         .append("captionBodyLength", lengthOfBody)
                         .append("URL2Image", s)
@@ -215,7 +215,7 @@ public class MongoDBRepo {
 
                 findings.add(new Document("findingID", a.getFindingID())
 
-                        .append("captionTitle", a.getCaptionTitle())
+                        .append("captionTitle", a.getLabel())
 
                         .append("captionTitleLenght", lengthOfTitle)
 
@@ -223,7 +223,8 @@ public class MongoDBRepo {
 
                         .append("captionBodyLenght", lengthOfBody)
 
-                        .append("URL2Image", s));
+                        .append("URL2Image", s)
+                        .append("context", a.getContext()));
 
             }
         }
@@ -264,7 +265,8 @@ public class MongoDBRepo {
             d.append("numOfFindings",findings.size());
         d.append("path2file",rsj.getXMLPathComplete());
         try{
-        db.getCollection("hindawi_"+date).insertOne(d);
+            db.getCollection("Version26.09.").insertOne(d);
+        //db.getCollection("hindawi_"+date).insertOne(d);
         //try{
           //  db.getCollection("hindawi_1503401197146").insertOne(d);
         }catch(Exception e){

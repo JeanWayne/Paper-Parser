@@ -53,7 +53,7 @@ public class Main implements Text{
 	static final boolean withDownload=false; //Download Images as binary data?
 	static final int outPutFormat=2; // 0=path, 1= current/overall, 2=percentage.
 
-
+//neuer Versuch
 	/*
 	* DATA HANDLING
 	*/
