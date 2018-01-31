@@ -43,13 +43,15 @@ public class Main implements Text{
 	//TODO: Lösung für Formeln
 	//TODO: Automatisches Einfügen von Referenzen aus anderer Stelle im Text (hauptsächlich Copernicus)
 //	static final String location="c://Hindawi";
-	static final String location="C:\\Users\\SohmenL\\Downloads\\testdocs";
+	static final String location="E:\\miniminitest";
     static int i=0;
     static final String outputEncoding = "UTF-8";
     static final boolean VERBOSE=true;
-	static final String mongoIP="141.71.5.19";
+	//static final String mongoIP="141.71.5.19";
+	static final String mongoIP="localhost";
 	static final int mongoPort=27017;
-	static final String mongoDataBase="beta";
+	//static final String mongoDataBase="beta";
+	static final String mongoDataBase="workshop";
 	static final boolean withDownload=false; //Download Images as binary data?
 	static final int outPutFormat=2; // 0=path, 1= current/overall, 2=percentage.
 
@@ -275,7 +277,7 @@ public class Main implements Text{
 			context(rsj);
 			//System.out.print("context");System.out.println(System.currentTimeMillis() - start);
 			//start = System.currentTimeMillis();
-			//MongoDBRepo.getInstance(mongoIP,mongoPort,mongoDataBase).writeJournal(rsj,withDownload);
+			MongoDBRepo.getInstance(mongoIP,mongoPort,mongoDataBase).writeJournal(rsj,withDownload);
 			//System.out.print("mondowrite");System.out.println(System.currentTimeMillis() - start);
 			references.clear();
 			figureContext.clear();
@@ -310,7 +312,7 @@ public class Main implements Text{
 				if (currentNode.getNodeName().equals("xref")&&!currentNode.hasChildNodes()){
 					try {
 						String key= currentNode.getAttributes().getNamedItem("rid").getTextContent();
-						//System.out.println(key);
+						//System.out.println("Key: "+key);
 						String value = findReference(key, root);
 						if (value==null){
                             Matcher matcher = Pattern.compile("\\d+").matcher(key);
@@ -319,10 +321,11 @@ public class Main implements Text{
                                 m=matcher.group();
                             }
                             value=m;
-                            //System.out.println(m);
+                            //System.out.println("Value: "+m);
                         }
 						if (value!=null) {
                             references.put(key, value);
+                            //System.out.println(key+" "+value);
                         }
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -424,12 +427,12 @@ public class Main implements Text{
 			{
 
 			}
-			if(currentNode.getNodeType() == Node.ELEMENT_NODE){
+			/*if(currentNode.getNodeType() == Node.ELEMENT_NODE){
 				if(currentNode.hasChildNodes()){
 					getAbstract(rsj, currentNode);
 				}
 
-			}
+			}*/
 
 		}
 		if (rsj.getAbstract()==null) {
@@ -1237,8 +1240,12 @@ public class Main implements Text{
 								content += "#figure#";
 
 							}
-                        }else{
+                        }else if(!node.hasChildNodes()){
 							content += (" " + references.get(node.getAttributes().getNamedItem("rid").getTextContent()) + " ");
+							//System.out.println("no child nodes: "+content);
+						}else{
+                        	content+=node.getTextContent();
+                        	//System.out.println("with child nodes: "+content);
 						}
 
 					} catch (Exception e) {
@@ -1251,9 +1258,12 @@ public class Main implements Text{
 								content += "#figure#";
 
 							}
-                        }else{
+                        }else if(!node.hasChildNodes()){
 							content += (" " + references.get(node.getAttributes().getNamedItem("rid").getTextContent()) + " ");
-						}
+						}else{
+							content+=node.getTextContent();
+			}
+
 					} catch (Exception e) {
 						//e.printStackTrace();
 						//System.out.println("RefID");
@@ -1410,10 +1420,13 @@ public class Main implements Text{
 			} else if (node.getNodeName().equals("xref")) {
 				if (node.getParentNode().getNodeName().equals("article-title")) {
 
-				} else {
-					content += (" " + references.get(node.getAttributes().getNamedItem("rid").getTextContent()) + " ");
-
-				}
+				}else if(!node.hasChildNodes()){
+				content += (" " + references.get(node.getAttributes().getNamedItem("rid").getTextContent()) + " ");
+				//System.out.println("no child nodes: "+content);
+				}else{
+				content+=node.getTextContent();
+				//System.out.println("with child nodes: "+content);
+			}
 			}  else if (node.hasChildNodes()) {
 				NodeList childNodes = node.getChildNodes();
 				for (int g = 0; g < childNodes.getLength(); g++) {
