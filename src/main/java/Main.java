@@ -39,19 +39,16 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
  */
 public class Main implements Text{
 
-	//TODO: Entfernen von Whitespace, aber belassen von echten Absätzen etc
-	//TODO: Lösung für Formeln
-	//TODO: Automatisches Einfügen von Referenzen aus anderer Stelle im Text (hauptsächlich Copernicus)
 //	static final String location="c://Hindawi";
-	static final String location="E:\\miniminitest";
+	static final String location="D:\\Artikel\\in Arbeit\\Springerdoi";
     static int i=0;
     static final String outputEncoding = "UTF-8";
     static final boolean VERBOSE=true;
-	//static final String mongoIP="141.71.5.19";
-	static final String mongoIP="localhost";
+	static final String mongoIP="141.71.5.19";
+	//static final String mongoIP="localhost";
 	static final int mongoPort=27017;
-	//static final String mongoDataBase="beta";
-	static final String mongoDataBase="workshop";
+	static final String mongoDataBase="beta";
+	//static final String mongoDataBase="workshop";
 	static final boolean withDownload=false; //Download Images as binary data?
 	static final int outPutFormat=2; // 0=path, 1= current/overall, 2=percentage.
 
@@ -882,11 +879,11 @@ public class Main implements Text{
 						rsj.setFullDate(date);
 					}
 				}
-            if(currentNode.getNodeName().equals("publication-year")|| currentNode.getNodeName().matches("[Yy]ear"))
+            if(currentNode.getNodeName().equals("publication-year")|| currentNode.getNodeName().matches("[y]ear"))
             {
 
 				try {
-					if (currentNode.getParentNode().getNodeName().equals("pub-date") ||(currentNode.getParentNode().getNodeName().equals("OnlineDate"))) {
+					if (currentNode.getParentNode().getNodeName().equals("pub-date")) {
 
 						if(currentNode.getParentNode().hasAttributes()){
 							if (!currentNode.getParentNode().getAttributes().item(0).getNodeValue().matches("pmc-release|collection")){
@@ -914,6 +911,14 @@ public class Main implements Text{
 					e.printStackTrace();
 				}
             }
+            if(currentNode.getNodeName().equals("<CopyrightYear>")){
+				try {
+					rsj.setPublicationYear(currentNode.getTextContent().trim());
+
+				} catch (Exception e) {
+					rsj.setPublicationYear("NO YEAR FOUND");
+				}
+			}
             if(currentNode.getNodeName().equals("journal-id")&&!rsj.getXMLPathComplete().contains("PMC"))
             {
 				try{
