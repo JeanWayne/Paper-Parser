@@ -61,7 +61,7 @@ public class MongoDBRepo {
 	{
 		Document d = new Document("Exception",ExceptionText);
 		d.append("path2file",Path);
-		db.getCollection("hindawi_"+date).insertOne(d);
+		//db.getCollection("hindawi_"+date).insertOne(d);
 	}
     public void writeJournal(ResultSetJournal rsj,boolean withDownload) {
         Document d = new Document("journalName", rsj.getJournalName());
@@ -153,7 +153,7 @@ public class MongoDBRepo {
                         int n = 0;
                         while ((inputLine = in.readLine()) != null && n < 10) {
                             if (inputLine.contains("File or directory not found")) {
-                                s = "https://www.hindawi.com/journals/" + rsj.getPublisherId() + "/" + rsj.getPublicationYear() + "/" + a.getGraphicDOI() + ".svgz";
+                                s = "https://www.hindawi.com/journals/" + rsj.getPublisherId() + "/" + rsj.getPublicationYear() + "/" + link + ".svgz";
                                 in.close();
                                 break;
                             }
@@ -208,7 +208,8 @@ public class MongoDBRepo {
                         .append("captionBodyLength", lengthOfBody)
                         .append("URL2Image", s)
                         .append("binary_data", a.getImage())
-                        .append("context", a.getContext()));
+                        .append("context", a.getContext())
+                        );
             } else
 
             {
@@ -224,11 +225,30 @@ public class MongoDBRepo {
                         .append("captionBodyLenght", lengthOfBody)
 
                         .append("URL2Image", s)
-                        .append("context", a.getContext()));
+                        .append("context", a.getContext())
+                        );
 
             }
         }
 
+
+        //set licenseType
+        String license = (String) rsj.getLicense();
+        String licenseType="unclassified";
+        if(license==null){
+            licenseType="invalid";
+        }
+        else if(license.contains("creativecommons.org/licenses/by/4.0")){
+            licenseType="cc-by-4.0";
+        }else if(license.contains("creativecommons.org/licenses/by/3.0")){
+            licenseType="cc-by-3.0";
+        }else if(license.contains("creativecommons.org/licenses/by/2.0")){
+            licenseType="cc-by-2.0";
+        }else if(license.contains("creativecommons.org/licenses/by/2.5")) {
+            licenseType = "cc-by-2.5";
+        }else if(license.contains("www.frontiersin.org/licenseagreement")){
+            licenseType = "frontiers";
+        }
         d.append("DOI",rsj.getJournalDOI());
 
 
@@ -243,6 +263,7 @@ public class MongoDBRepo {
         d.append("journalIssue", rsj.getIssue());
         d.append("pages", rsj.getPages());
         d.append("license", rsj.getLicense());
+        d.append("LicenseType", licenseType);
         d.append("publisher", rsj.getPublisher());
         d.append("keywords", rsj.getKeywords());
         d.append("Copyright Holder", rsj.getCopyrightHolder());
@@ -265,7 +286,7 @@ public class MongoDBRepo {
             d.append("numOfFindings",findings.size());
         d.append("path2file",rsj.getXMLPathComplete());
         try{
-            db.getCollection("Version26.09.").insertOne(d);
+            db.getCollection("Corpus3").insertOne(d);
         //db.getCollection("hindawi_"+date).insertOne(d);
         //try{
           //  db.getCollection("hindawi_1503401197146").insertOne(d);
@@ -291,7 +312,8 @@ public class MongoDBRepo {
             Editors.add(new Document("firstName",a.getFirstName()).append("lastName",a.getLastName()));
         }
         d.append("Year",Year).append("DOI",DOI).append("findingID",findingID).append("captionBody",captionBody).append("ImageURL",imageURL).append("Authors",Authors).append("Editor",Editors);
-        db.getCollection("hindawi_"+date).insertOne(d);
+        //db.getCollection("hindawi_"+date).insertOne(d);
+        db.getCollection("Corpus3").insertOne(d);
     }
 	@Deprecated
     public void writeError(String error)
