@@ -100,8 +100,8 @@ public class MongoDBRepo {
             d.append("year",rsj.getPublicationYear().replaceAll("\t","").replaceAll(" ",""));
         else {
 
-            rsj.setPublicationYear(rsj.getXMLPathYear());
-            d.append("year", rsj.getXMLPathYear());
+            rsj.setPublicationYear(rsj.getFullDate().getYear());
+            d.append("year", rsj.getPublicationYear());
         }
         metadata.PublicationDate publicationDate = rsj.getFullDate();
         Document pdate;
@@ -286,7 +286,7 @@ public class MongoDBRepo {
             d.append("numOfFindings",findings.size());
         d.append("path2file",rsj.getXMLPathComplete());
         try{
-            db.getCollection("Corpus3").insertOne(d);
+            db.getCollection("Corpustemp").insertOne(d);
         //db.getCollection("hindawi_"+date).insertOne(d);
         //try{
           //  db.getCollection("hindawi_1503401197146").insertOne(d);
@@ -313,7 +313,7 @@ public class MongoDBRepo {
         }
         d.append("Year",Year).append("DOI",DOI).append("findingID",findingID).append("captionBody",captionBody).append("ImageURL",imageURL).append("Authors",Authors).append("Editor",Editors);
         //db.getCollection("hindawi_"+date).insertOne(d);
-        db.getCollection("Corpus3").insertOne(d);
+        db.getCollection("Corpustemp").insertOne(d);
     }
 	@Deprecated
     public void writeError(String error)
