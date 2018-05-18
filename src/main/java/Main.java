@@ -40,7 +40,7 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 public class Main implements Text{
 
 //	static final String location="c://Hindawi";
-	static final String location="C:\\Users\\SohmenL\\Downloads\\hindawicorpus";
+	static final String location="D:\\Artikel\\fertig\\Frontiers";
     static int i=0;
     static final String outputEncoding = "UTF-8";
     static final boolean VERBOSE=true;
@@ -230,7 +230,6 @@ public class Main implements Text{
 			}
 		}
 
-		rsj.setXMLPathYear(xmlSource.substring(11,15));
 		rsj.setXMLPathComplete((xmlSource));
 
         DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory
@@ -247,7 +246,9 @@ public class Main implements Text{
 			document = docBuilder.parse(stream);
 		}else {
 			try {
-				document = docBuilder.parse(new File(xmlSource));
+				if(xmlSource.endsWith("xml")){
+					document = docBuilder.parse(new File(xmlSource));
+				}
 			} catch (Exception e) {
 				MongoDBRepo.getInstance(mongoIP,mongoPort,mongoDataBase).writeError(xmlSource,e.toString(), "modus");
 				System.out.println("Could not been read: " + xmlSource + "\n" + e);

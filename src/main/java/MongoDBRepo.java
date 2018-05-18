@@ -47,7 +47,8 @@ public class MongoDBRepo {
 //            MongoDBRepo.mongoClient = new MongoClient("127.0.0.1", 27017);
             MongoDBRepo.db = mongoClient.getDatabase(databaseName);
 
-            date = System.currentTimeMillis() + "";
+            //date = System.currentTimeMillis() + "";
+            date = "1526627740266";
         }
             return MongoDBRepo.instance;
     }
@@ -106,8 +107,12 @@ public class MongoDBRepo {
             d.append("year",rsj.getPublicationYear().replaceAll("\t","").replaceAll(" ",""));
         else {
 
-            rsj.setPublicationYear(rsj.getFullDate().getYear());
-            d.append("year", rsj.getPublicationYear());
+            try {
+                rsj.setPublicationYear(rsj.getFullDate().getYear());
+                d.append("year", rsj.getPublicationYear());
+            } catch (Exception e) {
+                d.append("year", null);
+            }
         }
         metadata.PublicationDate publicationDate = rsj.getFullDate();
         Document pdate;
