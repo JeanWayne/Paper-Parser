@@ -106,8 +106,8 @@ public class MongoDBRepo {
             d.append("year",rsj.getPublicationYear().replaceAll("\t","").replaceAll(" ",""));
         else {
 
-            rsj.setPublicationYear(rsj.getXMLPathYear());
-            d.append("year", rsj.getXMLPathYear());
+            rsj.setPublicationYear(rsj.getFullDate().getYear());
+            d.append("year", rsj.getPublicationYear());
         }
         metadata.PublicationDate publicationDate = rsj.getFullDate();
         Document pdate;
