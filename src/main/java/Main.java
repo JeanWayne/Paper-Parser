@@ -40,14 +40,14 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 public class Main implements Text{
 
 //	static final String location="c://Hindawi";
-	static final String location="D:\\Artikel\\in Arbeit\\Springerdoi";
+	static final String location="C:\\Users\\SohmenL\\Downloads\\hindawicorpus";
     static int i=0;
     static final String outputEncoding = "UTF-8";
     static final boolean VERBOSE=true;
-	static final String mongoIP="141.71.5.19";
+	static final String mongoIP="141.71.5.22";
 	//static final String mongoIP="localhost";
 	static final int mongoPort=27017;
-	static final String mongoDataBase="beta";
+	static final String mongoDataBase="NewSchema";
 	//static final String mongoDataBase="workshop";
 	static final boolean withDownload=false; //Download Images as binary data?
 	static final int outPutFormat=2; // 0=path, 1= current/overall, 2=percentage.

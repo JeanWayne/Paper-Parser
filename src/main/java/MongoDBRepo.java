@@ -9,6 +9,7 @@ import metadata.Citation;
 import metadata.ID;
 import org.bson.BsonDocument;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,6 +25,7 @@ public class MongoDBRepo {
 
     private static MongoDBRepo instance;
     private static MongoDatabase db;
+
     private static MongoClient mongoClient;
     private static String date;
     private MongoDBRepo () {}
@@ -44,6 +46,7 @@ public class MongoDBRepo {
             MongoDBRepo.mongoClient = new MongoClient(IP,Port);
 //            MongoDBRepo.mongoClient = new MongoClient("127.0.0.1", 27017);
             MongoDBRepo.db = mongoClient.getDatabase(databaseName);
+
             date = System.currentTimeMillis() + "";
         }
             return MongoDBRepo.instance;
@@ -61,13 +64,16 @@ public class MongoDBRepo {
 	{
 		Document d = new Document("Exception",ExceptionText);
 		d.append("path2file",Path);
-		//db.getCollection("hindawi_"+date).insertOne(d);
+		db.getCollection("Errors_"+date).insertOne(d);
 	}
     public void writeJournal(ResultSetJournal rsj,boolean withDownload) {
         Document d = new Document("journalName", rsj.getJournalName());
+        d.put("_id",new ObjectId());
+        d.append("DOI",rsj.getJournalDOI());
         List<Document> Authors = new ArrayList<>();
         List<Document> Editors = new ArrayList<>();
         List<Document> findings = new ArrayList<>();
+        List<Object> findingsRef = new ArrayList<>();
         List<Document> Bibliography = new ArrayList<>();
         List<Document> IDList =new ArrayList<>();
 
@@ -100,8 +106,8 @@ public class MongoDBRepo {
             d.append("year",rsj.getPublicationYear().replaceAll("\t","").replaceAll(" ",""));
         else {
 
-            rsj.setPublicationYear(rsj.getFullDate().getYear());
-            d.append("year", rsj.getPublicationYear());
+            rsj.setPublicationYear(rsj.getXMLPathYear());
+            d.append("year", rsj.getXMLPathYear());
         }
         metadata.PublicationDate publicationDate = rsj.getFullDate();
         Document pdate;
@@ -153,7 +159,7 @@ public class MongoDBRepo {
                         int n = 0;
                         while ((inputLine = in.readLine()) != null && n < 10) {
                             if (inputLine.contains("File or directory not found")) {
-                                s = "https://www.hindawi.com/journals/" + rsj.getPublisherId() + "/" + rsj.getPublicationYear() + "/" + link + ".svgz";
+                                s = "https://www.hindawi.com/journals/" + rsj.getPublisherId() + "/" + rsj.getPublicationYear() + "/" + a.getGraphicDOI() + ".svgz";
                                 in.close();
                                 break;
                             }
@@ -184,6 +190,8 @@ public class MongoDBRepo {
             int lengthOfTitle = 0;
 
             int lengthOfBody = 0;
+            Document img = new Document();
+            img.put("_id",new ObjectId());
 
             if (a.getCaptionTitle() != null)
 
@@ -202,54 +210,36 @@ public class MongoDBRepo {
                     System.out.println(a.getImageURL());
                 }
 
-                findings.add(new Document("findingID", a.getFindingID())
+                findings.add(img.append("findingID", a.getFindingID())
+                        .append("originDOI",rsj.getJournalDOI())
+                        .append("source_id",d.get("_id"))
                         .append("captionTitle", a.getLabel())
+                        .append("captionTitleLenght",  a.getLabel().length())
                         .append("captionBody", a.getCaptionBody())
                         .append("captionBodyLength", lengthOfBody)
                         .append("URL2Image", s)
                         .append("binary_data", a.getImage())
-                        .append("context", a.getContext())
-                        );
+                        .append("context", a.getContext()));
             } else
 
             {
 
-                findings.add(new Document("findingID", a.getFindingID())
-
+                findings.add(img.append("findingID", a.getFindingID())
+                        .append("originDOI",rsj.getJournalDOI())
+                        .append("source_id",d.get("_id"))
                         .append("captionTitle", a.getLabel())
-
-                        .append("captionTitleLenght", lengthOfTitle)
 
                         .append("captionBody", a.getCaptionBody())
 
                         .append("captionBodyLenght", lengthOfBody)
 
                         .append("URL2Image", s)
-                        .append("context", a.getContext())
-                        );
+                        .append("context", a.getContext()));
 
             }
         }
 
 
-        //set licenseType
-        String license = (String) rsj.getLicense();
-        String licenseType="unclassified";
-        if(license==null){
-            licenseType="invalid";
-        }
-        else if(license.contains("creativecommons.org/licenses/by/4.0")){
-            licenseType="cc-by-4.0";
-        }else if(license.contains("creativecommons.org/licenses/by/3.0")){
-            licenseType="cc-by-3.0";
-        }else if(license.contains("creativecommons.org/licenses/by/2.0")){
-            licenseType="cc-by-2.0";
-        }else if(license.contains("creativecommons.org/licenses/by/2.5")) {
-            licenseType = "cc-by-2.5";
-        }else if(license.contains("www.frontiersin.org/licenseagreement")){
-            licenseType = "frontiers";
-        }
-        d.append("DOI",rsj.getJournalDOI());
 
 
 
@@ -263,7 +253,6 @@ public class MongoDBRepo {
         d.append("journalIssue", rsj.getIssue());
         d.append("pages", rsj.getPages());
         d.append("license", rsj.getLicense());
-        d.append("LicenseType", licenseType);
         d.append("publisher", rsj.getPublisher());
         d.append("keywords", rsj.getKeywords());
         d.append("Copyright Holder", rsj.getCopyrightHolder());
@@ -282,13 +271,24 @@ public class MongoDBRepo {
             d.append("bodyLenght",rsj.getBody().length());
         else
             d.append("bodyLenght","Body is NULL");
-        d.append("findings",findings);
-            d.append("numOfFindings",findings.size());
+
+        //d.append("findings",findings);
+
+
+        d.append("numOfFindings",findings.size());
         d.append("path2file",rsj.getXMLPathComplete());
         try{
-            db.getCollection("Corpustemp").insertOne(d);
-        //db.getCollection("hindawi_"+date).insertOne(d);
-        //try{
+            //db.getCollection("Version26.09.").insertOne(d);
+            for(Document y : findings)
+            {
+                findingsRef.add(y.get("_id"));
+                db.getCollection("Corpus_Image_"+date).insertOne(y);
+            }
+            d.append("findingsRef",findingsRef);
+
+            db.getCollection("Corpus_Journal_"+date).insertOne(d);
+
+            //try{
           //  db.getCollection("hindawi_1503401197146").insertOne(d);
         }catch(Exception e){
             System.out.println(e);
@@ -296,7 +296,7 @@ public class MongoDBRepo {
         }
     }
 
-
+    @Deprecated
     public void write(String journal, String Year, String DOI, int findingID, String captionBody, String imageURL, List<Author> Author, List<Author> Editor)
     {
         Document d = new Document("journalName", journal);
@@ -313,7 +313,6 @@ public class MongoDBRepo {
         }
         d.append("Year",Year).append("DOI",DOI).append("findingID",findingID).append("captionBody",captionBody).append("ImageURL",imageURL).append("Authors",Authors).append("Editor",Editors);
         //db.getCollection("hindawi_"+date).insertOne(d);
-        db.getCollection("Corpustemp").insertOne(d);
     }
 	@Deprecated
     public void writeError(String error)
