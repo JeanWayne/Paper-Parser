@@ -239,7 +239,23 @@ public class MongoDBRepo {
             }
         }
 
-
+        //set licenseType
+        String license = (String) rsj.getLicense();
+        String licenseType="unclassified";
+        if(license==null){
+            licenseType="invalid";
+        }
+        else if(license.contains("creativecommons.org/licenses/by/4.0")){
+            licenseType="cc-by-4.0";
+        }else if(license.contains("creativecommons.org/licenses/by/3.0")){
+            licenseType="cc-by-3.0";
+        }else if(license.contains("creativecommons.org/licenses/by/2.0")){
+            licenseType="cc-by-2.0";
+        }else if(license.contains("creativecommons.org/licenses/by/2.5")) {
+            licenseType = "cc-by-2.5";
+        }else if(license.contains("www.frontiersin.org/licenseagreement")){
+            licenseType = "frontiers";
+        }
 
 
 
@@ -253,6 +269,7 @@ public class MongoDBRepo {
         d.append("journalIssue", rsj.getIssue());
         d.append("pages", rsj.getPages());
         d.append("license", rsj.getLicense());
+	d.append("LicenseType", licenseType);
         d.append("publisher", rsj.getPublisher());
         d.append("keywords", rsj.getKeywords());
         d.append("Copyright Holder", rsj.getCopyrightHolder());
