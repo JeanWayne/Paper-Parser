@@ -40,7 +40,7 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 public class Main implements Text{
 
 //	static final String location="c://Hindawi";
-	static final String location="D:\\Artikel\\fertig\\Frontiers";
+	static final String location="D:\\Artikel\\fertig\\PubMedCentral\\Q-Z";
     static int i=0;
     static final String outputEncoding = "UTF-8";
     static final boolean VERBOSE=true;
@@ -832,9 +832,39 @@ public class Main implements Text{
 					}
 				}
 			}
-				if(currentNode.getNodeName().matches("pub-date|OnlineDate")){
+			if(currentNode.getNodeName().equals("OnlineDate")){
+				if ((rsj.getFullDate()!=null)) {
+					if(currentNode.getParentNode().getNodeName().equals("ArticleHistory")){
+						NodeList children = currentNode.getChildNodes();
+						metadata.PublicationDate date = new metadata.PublicationDate();
+						for (int m = 0; m < children.getLength(); m++) {
+							Node childNode = children.item(m);
 
-					if ((rsj.getFullDate()!=null)) {
+
+							if (childNode.getNodeName().equals("Day")) {
+								if (rsj.getFullDate().getDay() == null) {
+									date.setDay(childNode.getTextContent());
+								}
+							}
+							if (childNode.getNodeName().equals("Month")) {
+								if (rsj.getFullDate().getMonth() == null) {
+									date.setMonth(childNode.getTextContent());
+								}
+							}
+							if (childNode.getNodeName().equals("Year")) {
+								if (rsj.getFullDate().getYear() == null) {
+									date.setYear(childNode.getTextContent());
+								}
+							}
+						}
+						rsj.setFullDate(date);
+					}
+
+				}
+			}
+			if(currentNode.getNodeName().equals("pub-date")){
+				if(currentNode.getParentNode().hasAttributes()) {
+					if (currentNode.getParentNode().getAttributes().item(0).getNodeValue().equals("epub")) {
 						NodeList children = currentNode.getChildNodes();
 						metadata.PublicationDate date = new metadata.PublicationDate();
 						for (int m = 0; m < children.getLength(); m++) {
@@ -859,27 +889,83 @@ public class Main implements Text{
 						}
 						rsj.setFullDate(date);
 					}
-					else if(rsj.getFullDate()==null){
 
-						NodeList children = currentNode.getChildNodes();
-						metadata.PublicationDate date = new metadata.PublicationDate();
-						for (int m = 0; m < children.getLength(); m++) {
-							Node childNode = children.item(m);
+					if(rsj.getFullDate()==null){
+						if (currentNode.getParentNode().getAttributes().item(0).getNodeValue().equals("ppub")) {
+							NodeList children = currentNode.getChildNodes();
+							metadata.PublicationDate date = new metadata.PublicationDate();
+							for (int m = 0; m < children.getLength(); m++) {
+								Node childNode = children.item(m);
 
 
-							if (childNode.getNodeName().matches("[Dd]ay")) {
+								if (childNode.getNodeName().equals("day")) {
+									if(rsj.getFullDate().getDay()==null){
+										date.setDay(childNode.getTextContent());
+									}
+								}
+								if (childNode.getNodeName().equals("month")) {
+									if(rsj.getFullDate().getMonth()==null){
+										date.setMonth(childNode.getTextContent());
+									}
+								}
+								if (childNode.getNodeName().equals("year")) {
+									if(rsj.getFullDate().getYear()==null){
+										date.setYear(childNode.getTextContent());
+									}
+								}
+							}
+							rsj.setFullDate(date);
+						}
+
+					}
+
+				}
+				if ((rsj.getFullDate()!=null)) {
+					NodeList children = currentNode.getChildNodes();
+					metadata.PublicationDate date = new metadata.PublicationDate();
+					for (int m = 0; m < children.getLength(); m++) {
+						Node childNode = children.item(m);
+
+
+						if (childNode.getNodeName().equals("day")) {
+							if(rsj.getFullDate().getDay()==null){
 								date.setDay(childNode.getTextContent());
 							}
-							if (childNode.getNodeName().matches("[Mm]onth")) {
+						}
+						if (childNode.getNodeName().equals("month")) {
+							if(rsj.getFullDate().getMonth()==null){
 								date.setMonth(childNode.getTextContent());
 							}
-							if (childNode.getNodeName().matches("[Yy]ear")) {
+						}
+						if (childNode.getNodeName().equals("year")) {
+							if(rsj.getFullDate().getYear()==null){
 								date.setYear(childNode.getTextContent());
 							}
 						}
-						rsj.setFullDate(date);
 					}
+					rsj.setFullDate(date);
 				}
+				else if(rsj.getFullDate()==null){
+
+					NodeList children = currentNode.getChildNodes();
+					metadata.PublicationDate date = new metadata.PublicationDate();
+					for (int m = 0; m < children.getLength(); m++) {
+						Node childNode = children.item(m);
+
+
+						if (childNode.getNodeName().matches("[Dd]ay")) {
+							date.setDay(childNode.getTextContent());
+						}
+						if (childNode.getNodeName().matches("[Mm]onth")) {
+							date.setMonth(childNode.getTextContent());
+						}
+						if (childNode.getNodeName().matches("[Yy]ear")) {
+							date.setYear(childNode.getTextContent());
+						}
+					}
+					rsj.setFullDate(date);
+				}
+			}
             if(currentNode.getNodeName().equals("publication-year")|| currentNode.getNodeName().matches("[y]ear"))
             {
 
