@@ -240,9 +240,6 @@ public class Result
 
 		//URL url = new URL("http://journals.plos.org/ploscompbiol/article/figure/image?size=large&id="+graphicDOI);
 
-		if(rsj.getPublicationYear()==null||rsj.getPublicationYear().length()>4)
-
-			rsj.setPublicationYear(rsj.getXMLPathYear());
 
 
 
@@ -317,37 +314,6 @@ public class Result
 		//db.write("PLOS",graphicDOI,captionBody,captionTitle,response);
 
 	}
-
-	public void save2dbWithOutImage() throws IOException
-
-	{
-
-		MongoDBRepo db = MongoDBRepo.getInstance();
-
-		//URL url = new URL("http://journals.plos.org/ploscompbiol/article/figure/image?size=large&id="+graphicDOI);
-
-		if(rsj.getPublicationYear()==null||rsj.getPublicationYear().length()>4)
-
-			rsj.setPublicationYear(rsj.getXMLPathYear());
-
-
-
-		URL url = new URL("https://www.hindawi.com/journals/"+rsj.getPublisherId()+"/"+rsj.getPublicationYear()+"/"+graphicDOI+".jpg");
-
-
-
-		if(rsj.getError()=="")
-
-			db.write(rsj.getJournalName(),rsj.getPublicationYear(),rsj.getJournalDOI(),findingID,captionBody,url.toString(),rsj.getAuthors(),rsj.getEditor());
-
-		else
-
-			db.writeError(rsj.getError());
-
-	}
-
-
-
 
 
 }

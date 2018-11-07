@@ -44,11 +44,8 @@ public class MongoDBRepo {
         if (MongoDBRepo.instance == null) {
             MongoDBRepo.instance = new MongoDBRepo();
             MongoDBRepo.mongoClient = new MongoClient(IP,Port);
-//            MongoDBRepo.mongoClient = new MongoClient("127.0.0.1", 27017);
             MongoDBRepo.db = mongoClient.getDatabase(databaseName);
-
-            //date = System.currentTimeMillis() + "";
-            date = "1526627740266";
+            date = System.currentTimeMillis() + "";
         }
             return MongoDBRepo.instance;
     }
@@ -72,7 +69,6 @@ public class MongoDBRepo {
         d.put("_id",new ObjectId());
         d.append("DOI",rsj.getJournalDOI());
         List<Document> Authors = new ArrayList<>();
-        List<Document> Editors = new ArrayList<>();
         List<Document> findings = new ArrayList<>();
         List<Object> findingsRef = new ArrayList<>();
         List<Document> Bibliography = new ArrayList<>();
@@ -98,10 +94,6 @@ public class MongoDBRepo {
         {
             Authors.add(new Document("firstName",a.getFirstName()).append("lastName",a.getLastName()));
         }
-        for(Author a : rsj.getEditor())
-        {
-            Editors.add(new Document("firstName",a.getFirstName()).append("lastName",a.getLastName()));
-        }
 
         if(rsj.getPublicationYear()!=null)
             d.append("year",rsj.getPublicationYear().replaceAll("\t","").replaceAll(" ",""));
@@ -117,7 +109,73 @@ public class MongoDBRepo {
         metadata.PublicationDate publicationDate = rsj.getFullDate();
         Document pdate;
         try{
-            pdate=(new Document("day", publicationDate.getDay()).append("month", publicationDate.getMonth()).append("year", publicationDate.getYear()) );
+            pdate=new Document();//("day", publicationDate.getDay()).append("month", publicationDate.getMonth()).append("year", publicationDate.getYear()) );
+            try{
+                pdate.append("day", publicationDate.getDay());
+                if(pdate.get("day")==null){
+                    pdate.put("day", "0");
+                }
+            }catch (NullPointerException E){
+                pdate.append("day", "0");
+            }
+            try{
+                pdate.append("month", publicationDate.getMonth());
+                if(pdate.get("month")==null){
+                    pdate.put("month", "0");
+                }
+
+            }catch (NullPointerException E){
+                pdate.append("month", "0");
+            }
+            try{
+                pdate.append("year", publicationDate.getYear());
+                if(pdate.get("year")==null){
+                    pdate.put("year", "0");
+                }
+
+            }catch (NullPointerException E){
+                pdate.append("year", "0");
+            }
+            //replace month name with number
+            String month = (String) pdate.get("month");
+            if(!(month.matches("\\d+"))){
+                if(month.equals("January")){
+                    pdate.put("month", "1");
+                }
+                else if(month.equals("February")){
+                    pdate.put("month", "2");
+                }
+                else if(month.equals("March")){
+                    pdate.put("month", "3");
+                }
+                else if(month.equals("April")){
+                    pdate.put("month", "4");
+                }
+                else if(month.equals("May")){
+                    pdate.put("month", "5");
+                }
+                else if(month.equals("June")){
+                    pdate.put("month", "6");
+                }
+                else if(month.equals("July")){
+                    pdate.put("month", "7");
+                }
+                else if(month.equals("August")){
+                    pdate.put("month", "8");
+                }
+                else if(month.equals("September")){
+                    pdate.put("month", "9");
+                }
+                else if(month.equals("October")){
+                    pdate.put("month", "10");
+                }
+                else if(month.equals("November")){
+                    pdate.put("month", "11");
+                }
+                else if(month.equals("December")){
+                    pdate.put("month", "12");
+                }
+            }
         } catch (Exception e){
             pdate=null;
         }
@@ -125,18 +183,11 @@ public class MongoDBRepo {
         Boolean tested= false;
 
         for(Result a : rsj.getResultList()) {
-            if (rsj.getPublicationYear() == null)
-                System.out.println("_____________________________________________");
-            if (rsj.getPublicationYear().equals("null"))
-                System.out.println("_____________________________________________");
 
             String s = "";
-
-            //System.out.println(rsj.getJournalDOI());
             if (rsj.getXMLPathComplete().contains("PMC")) {
                 s = "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC" + rsj.getPmcID() + "/bin/" + a.getGraphicDOI() + ".jpg";
             } else if (rsj.getXMLPathComplete().matches(".*[hH]indawi.*")) {
-
                 String link = a.getGraphicDOI();
                 if(link==null)link="0";
                 Matcher matcher = Pattern.compile("\\d+\\.(.*)").matcher(link);
@@ -152,7 +203,8 @@ public class MongoDBRepo {
                 matcher = Pattern.compile(".?\\/(.*)").matcher(doi);
                 try {
                     matcher.find();
-                    link = matcher.group(1)+"."+figID;                }catch (Exception e){
+                    link = matcher.group(1)+"."+figID;
+                }catch (Exception e){
                     link="no valid URL found";
                 }
                 s = "https://www.hindawi.com/journals/" + rsj.getPublisherId() +  "/" +link + ".jpg";
@@ -176,7 +228,8 @@ public class MongoDBRepo {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                }            }  else if (rsj.getXMLPathComplete().matches(".*[sS]pringer.*")) {
+                }
+            }  else if (rsj.getXMLPathComplete().matches(".*[sS]pringer.*")) {
 
                 String newDoi = rsj.getJournalDOI().substring(0, 7) + "%2F" + rsj.getJournalDOI().substring(8);
                 s = "https://static-content.springer.com/image/art%3A" + newDoi + "/" + a.getGraphicDOI();
@@ -200,20 +253,20 @@ public class MongoDBRepo {
 
             if (a.getCaptionTitle() != null)
 
-                    lengthOfTitle = a.getCaptionTitle().length();
+                lengthOfTitle = a.getCaptionTitle().length();
 
-                    if (a.getCaptionBody() != null)
+                if (a.getCaptionBody() != null)
 
-                        lengthOfBody = a.getCaptionBody().length();
+                    lengthOfBody = a.getCaptionBody().length();
 
-                    if (downloading) {
+                if (downloading) {
 
-                        try {
-                            a.download();
-                        } catch (IOException e) {
-                            //e.printStackTrace();
-                    System.out.println(a.getImageURL());
-                }
+                    try {
+                        a.download();
+                    } catch (IOException e) {
+                        //e.printStackTrace();
+                System.out.println(a.getImageURL());
+                    }
 
                 findings.add(img.append("findingID", a.getFindingID())
                         .append("originDOI",rsj.getJournalDOI())
@@ -225,11 +278,10 @@ public class MongoDBRepo {
                         .append("URL2Image", s)
                         .append("binary_data", a.getImage())
                         .append("context", a.getContext()));
-            } else
+                } else
+                    {
 
-            {
-
-                findings.add(img.append("findingID", a.getFindingID())
+                        findings.add(img.append("findingID", a.getFindingID())
                         .append("originDOI",rsj.getJournalDOI())
                         .append("source_id",d.get("_id"))
                         .append("captionTitle", a.getLabel())
@@ -241,7 +293,7 @@ public class MongoDBRepo {
                         .append("URL2Image", s)
                         .append("context", a.getContext()));
 
-            }
+                    }
         }
 
         //set licenseType
@@ -267,8 +319,6 @@ public class MongoDBRepo {
         d.append("title",rsj.getTitle());
         d.append("authors",Authors);
         d.append("numOfAuthor",Authors.size());
-        //d.append("editor",Editors);
-        //d.append("numOfEditor",Editors.size());
         d.append("abstract",rsj.getAbstract());
         d.append("journalVolume", rsj.getVolume());
         d.append("journalIssue", rsj.getIssue());
@@ -277,11 +327,11 @@ public class MongoDBRepo {
 	d.append("LicenseType", licenseType);
         d.append("publisher", rsj.getPublisher());
         d.append("keywords", rsj.getKeywords());
-        d.append("Copyright Holder", rsj.getCopyrightHolder());
         d.append("Bibliography", Bibliography);
         d.append("IDList",IDList);
         d.append("PublicationDate", pdate);
         d.append("formula", rsj.hasFormula);
+        d.append("source", rsj.getSource());
 
         if(rsj.getAbstract()!=null)
             d.append("abstractLenght",rsj.getAbstract().length());
@@ -309,9 +359,6 @@ public class MongoDBRepo {
             d.append("findingsRef",findingsRef);
 
             db.getCollection("Corpus_Journal_"+date).insertOne(d);
-
-            //try{
-          //  db.getCollection("hindawi_1503401197146").insertOne(d);
         }catch(Exception e){
             System.out.println(e);
             System.out.println(rsj.getXMLPathComplete());

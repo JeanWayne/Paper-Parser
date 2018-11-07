@@ -33,22 +33,21 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
-
+//TODO year should be from FullDate
+//TODO cleanup
+//TODO check Abstract and Body functions; getSections; condition
+//TODO Main no longer implements Text. Does this change anything?
 /**
  * Created by charbonn on 02.11.2016.
  */
-public class Main implements Text{
+public class Main{
 
-//	static final String location="c://Hindawi";
-	static final String location="D:\\Artikel\\fertig\\PubMedCentral\\Q-Z";
-    static int i=0;
+	static final String location="D:\\Artikel\\Test Collection\\Springer";
     static final String outputEncoding = "UTF-8";
     static final boolean VERBOSE=true;
 	static final String mongoIP="141.71.5.22";
-	//static final String mongoIP="localhost";
 	static final int mongoPort=27017;
 	static final String mongoDataBase="NewSchema";
-	//static final String mongoDataBase="workshop";
 	static final boolean withDownload=false; //Download Images as binary data?
 	static final int outPutFormat=2; // 0=path, 1= current/overall, 2=percentage.
 
@@ -61,7 +60,6 @@ public class Main implements Text{
 	public static HashMap references = new HashMap();
 	public static int withFormula=0;
 	public static int articles =0;
-	//public static int aufrufszahl =0;
 	public static long numberOfDocs=-1;
 	public static long currentDoc=0;
 	private static long startTime=0;
@@ -84,7 +82,6 @@ public class Main implements Text{
 			System.out.println("Saving it in MongoDB : "+mongoIP+":"+mongoPort +"   dbName:"+mongoDataBase);
 			System.out.println("Number of Documents overall: "+numberOfDocs);
 		}
- //       MongoDBRepo db = new MongoDBRepo();
 
 		try(Stream<Path> paths = Files.walk(Paths.get(location))) {
             paths.forEach(yearPath -> {
@@ -259,7 +256,23 @@ public class Main implements Text{
 
 		if(document!=null)
 		{
-			//long start = System.currentTimeMillis();
+			//set source:
+			if(xmlSource.contains("PMC")){
+				rsj.setSource("PMC");
+			}
+			else if(xmlSource.contains("Frontiers")){
+				rsj.setSource("Frontiers");
+			}
+			else if(xmlSource.contains("Springer")){
+				rsj.setSource("Springer");
+			}
+			else if(xmlSource.contains("Hindawi")){
+				rsj.setSource("Hindawi");
+			}
+			else if(xmlSource.contains("Copernicus")){
+				rsj.setSource("Copernicus");
+			}
+
 			mapReferences(rsj, document.getDocumentElement(), document.getDocumentElement());
 			//System.out.print("mapreferences"); System.out.println( System.currentTimeMillis() - start);
 			//start = System.currentTimeMillis();
@@ -310,7 +323,6 @@ public class Main implements Text{
 				if (currentNode.getNodeName().equals("xref")&&!currentNode.hasChildNodes()){
 					try {
 						String key= currentNode.getAttributes().getNamedItem("rid").getTextContent();
-						//System.out.println("Key: "+key);
 						String value = findReference(key, root);
 						if (value==null){
                             Matcher matcher = Pattern.compile("\\d+").matcher(key);
@@ -319,23 +331,22 @@ public class Main implements Text{
                                 m=matcher.group();
                             }
                             value=m;
-                            //System.out.println("Value: "+m);
                         }
 						if (value!=null) {
                             references.put(key, value);
-                            //System.out.println(key+" "+value);
                         }
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
 				}
 			if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
-				//calls this method for all the children which is Element
+				//calls this method for all the children with node type Element
 				mapReferences(rsj, currentNode, root);
 			}
 		}
 	}
 
+	//finds a given reference and returns its label
 	private static String findReference(String key, Node node) {
 		String value=null;
     	NodeList nodeList = node.getChildNodes();
@@ -357,8 +368,7 @@ public class Main implements Text{
 
 			}
 			else if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
-
-				//calls this method for all the children which is Element
+				//calls this method for all the children with node type Element
 				value=findReference(key, currentNode);
 				if (value!=null){
 					return value;
@@ -447,9 +457,7 @@ public class Main implements Text{
 						if (currentNode.hasChildNodes()){
 							getAbstract(rsj, currentNode);
 						}
-						}
-
-
+					}
 				}
 			}
 		}
@@ -481,7 +489,7 @@ public class Main implements Text{
 			}
 		}
 	}
-	private static void getBody(ResultSetJournal rsj ,Node root)
+	private static void getBody(ResultSetJournal rsj, Node root)
 	{
 		NodeList nodeList = root.getChildNodes();
 		for (int i = 0; i < nodeList.getLength(); i++) {
@@ -501,7 +509,6 @@ public class Main implements Text{
 					{
 						System.out.println("Error getBody:" +e);
 					}
-
 				}
 			}
 			catch(NullPointerException e)
@@ -510,13 +517,6 @@ public class Main implements Text{
 			}
 		}
 		if (rsj.getBody()==null) {
-//			Node alternativeRoot=null;
-//			for (int i = 0; i < nodeList.getLength(); i++) {
-//				Node currentNode = nodeList.item(i);
-//				if(currentNode.getNodeName().equals("record")){
-//					alternativeRoot=currentNode;
-//			if(root.getChildNodes())
-//			getBody(rsj, root.getChildNodes().item(1));
 			for (int i = 0; i < nodeList.getLength(); i++) {
 				Node currentNode = nodeList.item(i);
 				if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
@@ -524,12 +524,10 @@ public class Main implements Text{
 				}
 			}
 		}
-	//	}
 	}
 
-    private static void doSomething(ResultSetJournal rsj,Node node)
+    private static void doSomething(ResultSetJournal rsj, Node node)
     {
-
         String DOI = null;
         NodeList nodeList = node.getChildNodes();
 			for (int i = 0; i < nodeList.getLength(); i++) {
@@ -590,6 +588,11 @@ public class Main implements Text{
             		rsj.setIssue(currentNode.getTextContent());
 				}
 			}
+            if (currentNode.getNodeName().equals("meta:DOI")){
+            	if(currentNode.getParentNode().getNodeName().equals("meta:Info")){
+            		rsj.setJournalDOI(currentNode.getTextContent());
+				}
+			}
 			if (currentNode.getNodeName().equals("elocation-id")){
 				if(currentNode.getParentNode().getNodeName().matches("article-meta")||rsj.getIssue().equals(null)){
 					rsj.setIssue(currentNode.getTextContent());
@@ -608,10 +611,6 @@ public class Main implements Text{
 				catch (Exception e) {
 				rsj.setTitle("NO TAG 'article-title' FOUND");
 				}
-			}
-
-			if (currentNode.getNodeName().matches("CopyrightHolderName|copyright-holder|copyright-statement")){
-				rsj.setCopyrightHolder(currentNode.getTextContent());
 			}
 
 			if(currentNode.getNodeName().matches("[Ll]icense|CopyrightComment"))
@@ -736,35 +735,12 @@ public class Main implements Text{
 								rsj.getAuthors().add(a);
 
 							}
-							//currentNode.getChildNodes().item(0).getChildNodes().item(1).getTextContent()
-//							rsj.getAuthors().add(currentNode.getTextContent());
 						} catch (Exception e) {
 							rsj.setJournalName("NO AUTHOR FOUND");
 						}
 
 					}
 
-					if (currentNode.getAttributes().item(0).getNodeValue().equals("Academic Editor")) {
-						try {
-							for(int j=0; j<currentNode.getChildNodes().getLength();j++)
-							{
-								Author a= new Author();
-								if(currentNode.getChildNodes().item(j).getNodeName().equals("name"))
-								{
-									if(currentNode.getChildNodes().item(j).getChildNodes().item(0).getNodeName().equals("surname"))
-										a.setLastName(currentNode.getChildNodes().item(j).getChildNodes().item(0).getTextContent());
-									if(currentNode.getChildNodes().item(j).getChildNodes().item(1).getNodeName().equals("given-names"))
-										a.setFirstName(currentNode.getChildNodes().item(j).getChildNodes().item(1).getTextContent());
-
-								}
-								if(a.getFirstName()!=null&&a.getLastName()!=null)
-								rsj.getEditor().add(a);
-							}
-//							rsj.getEditor().add(currentNode.getTextContent());
-						} catch (Exception e) {
-							rsj.setJournalName("NO EDITOR FOUND");
-						}
-					}
 				}
 				catch(NullPointerException e)
 				{
@@ -798,20 +774,14 @@ public class Main implements Text{
 									else{
 										a.setFirstName(a.getFirstName()+ " "+currentNode.getChildNodes().item(j).getChildNodes().item(h).getTextContent());
 									}
-
 							}
-
 						}
 						if(a.getFirstName()!=null&&a.getLastName()!=null)
 							rsj.getAuthors().add(a);
-
 					}
-					//currentNode.getChildNodes().item(0).getChildNodes().item(1).getTextContent()
-//							rsj.getAuthors().add(currentNode.getTextContent());
 				} catch (Exception e) {
 					rsj.setJournalName("NO AUTHOR FOUND");
 				}
-
 			}
             if(currentNode.getNodeName().equals("journal-title"))
             {
@@ -832,214 +802,28 @@ public class Main implements Text{
 					}
 				}
 			}
-			if(currentNode.getNodeName().equals("OnlineDate")){
-				if ((rsj.getFullDate()!=null)) {
-					if(currentNode.getParentNode().getNodeName().equals("ArticleHistory")){
-						NodeList children = currentNode.getChildNodes();
-						metadata.PublicationDate date = new metadata.PublicationDate();
-						for (int m = 0; m < children.getLength(); m++) {
-							Node childNode = children.item(m);
-
-
-							if (childNode.getNodeName().equals("Day")) {
-								if (rsj.getFullDate().getDay() == null) {
-									date.setDay(childNode.getTextContent());
-								}
-							}
-							if (childNode.getNodeName().equals("Month")) {
-								if (rsj.getFullDate().getMonth() == null) {
-									date.setMonth(childNode.getTextContent());
-								}
-							}
-							if (childNode.getNodeName().equals("Year")) {
-								if (rsj.getFullDate().getYear() == null) {
-									date.setYear(childNode.getTextContent());
-								}
-							}
-						}
-						rsj.setFullDate(date);
-					}
-
-				}
-			}
-			if(currentNode.getNodeName().equals("pub-date")){
-				if(currentNode.getParentNode().hasAttributes()) {
-					if (currentNode.getParentNode().getAttributes().item(0).getNodeValue().equals("epub")) {
-						NodeList children = currentNode.getChildNodes();
-						metadata.PublicationDate date = new metadata.PublicationDate();
-						for (int m = 0; m < children.getLength(); m++) {
-							Node childNode = children.item(m);
-
-
-							if (childNode.getNodeName().equals("day")) {
-								if(rsj.getFullDate().getDay()==null){
-									date.setDay(childNode.getTextContent());
-								}
-							}
-							if (childNode.getNodeName().equals("month")) {
-								if(rsj.getFullDate().getMonth()==null){
-									date.setMonth(childNode.getTextContent());
-								}
-							}
-							if (childNode.getNodeName().equals("year")) {
-								if(rsj.getFullDate().getYear()==null){
-									date.setYear(childNode.getTextContent());
-								}
-							}
-						}
-						rsj.setFullDate(date);
-					}
-
-					if(rsj.getFullDate()==null){
-						if (currentNode.getParentNode().getAttributes().item(0).getNodeValue().equals("ppub")) {
-							NodeList children = currentNode.getChildNodes();
-							metadata.PublicationDate date = new metadata.PublicationDate();
-							for (int m = 0; m < children.getLength(); m++) {
-								Node childNode = children.item(m);
-
-
-								if (childNode.getNodeName().equals("day")) {
-									if(rsj.getFullDate().getDay()==null){
-										date.setDay(childNode.getTextContent());
-									}
-								}
-								if (childNode.getNodeName().equals("month")) {
-									if(rsj.getFullDate().getMonth()==null){
-										date.setMonth(childNode.getTextContent());
-									}
-								}
-								if (childNode.getNodeName().equals("year")) {
-									if(rsj.getFullDate().getYear()==null){
-										date.setYear(childNode.getTextContent());
-									}
-								}
-							}
-							rsj.setFullDate(date);
-						}
-
-					}
-
-				}
-				if ((rsj.getFullDate()!=null)) {
-					NodeList children = currentNode.getChildNodes();
-					metadata.PublicationDate date = new metadata.PublicationDate();
-					for (int m = 0; m < children.getLength(); m++) {
-						Node childNode = children.item(m);
-
-
-						if (childNode.getNodeName().equals("day")) {
-							if(rsj.getFullDate().getDay()==null){
-								date.setDay(childNode.getTextContent());
-							}
-						}
-						if (childNode.getNodeName().equals("month")) {
-							if(rsj.getFullDate().getMonth()==null){
-								date.setMonth(childNode.getTextContent());
-							}
-						}
-						if (childNode.getNodeName().equals("year")) {
-							if(rsj.getFullDate().getYear()==null){
-								date.setYear(childNode.getTextContent());
-							}
-						}
-					}
-					rsj.setFullDate(date);
-				}
-				else if(rsj.getFullDate()==null){
-
-					NodeList children = currentNode.getChildNodes();
-					metadata.PublicationDate date = new metadata.PublicationDate();
-					for (int m = 0; m < children.getLength(); m++) {
-						Node childNode = children.item(m);
-
-
-						if (childNode.getNodeName().matches("[Dd]ay")) {
-							date.setDay(childNode.getTextContent());
-						}
-						if (childNode.getNodeName().matches("[Mm]onth")) {
-							date.setMonth(childNode.getTextContent());
-						}
-						if (childNode.getNodeName().matches("[Yy]ear")) {
-							date.setYear(childNode.getTextContent());
-						}
-					}
-					rsj.setFullDate(date);
-				}
-			}
-            if(currentNode.getNodeName().equals("publication-year")|| currentNode.getNodeName().matches("[y]ear"))
-            {
-
-				try {
-					if (currentNode.getParentNode().getNodeName().equals("pub-date")) {
-
-						if(currentNode.getParentNode().hasAttributes()){
-							if (!currentNode.getParentNode().getAttributes().item(0).getNodeValue().matches("pmc-release|collection")){
-
-								try {
-									rsj.setPublicationYear(currentNode.getTextContent().trim());
-
-								} catch (Exception e) {
-									rsj.setPublicationYear("NO YEAR FOUND");
-								}
-							}
-						}else{
-							try {
-								rsj.setPublicationYear(currentNode.getTextContent().trim());
-
-							} catch (Exception e) {
-								rsj.setPublicationYear("NO YEAR FOUND");
-							}
-						}
-
-					}
-				}
-				catch(NullPointerException e)
+				if(currentNode.getNodeName().equals("journal-id")&&!rsj.getXMLPathComplete().contains("PMC")) //TODO test Hindawi links
 				{
-					e.printStackTrace();
-				}
-            }
-            if(currentNode.getNodeName().equals("<CopyrightYear>")){
-				try {
-					rsj.setPublicationYear(currentNode.getTextContent().trim());
-
-				} catch (Exception e) {
-					rsj.setPublicationYear("NO YEAR FOUND");
-				}
-			}
-            if(currentNode.getNodeName().equals("journal-id")&&!rsj.getXMLPathComplete().contains("PMC"))
-            {
-				try{
-                if(currentNode.getAttributes().item(0).getNodeValue().equals("publisher-id"))
-                {
 					try{
-                    rsj.setPublisherId(currentNode.getTextContent());
-					}catch(Exception e)
+						if(currentNode.getAttributes().item(0).getNodeValue().equals("publisher-id"))
+						{
+							try{
+								rsj.setPublisherId(currentNode.getTextContent());
+							}catch(Exception e)
+							{
+								rsj.setPublisherId("NO ID FOUND");
+							}
+						}}
+					catch(NullPointerException e)
 					{
-						rsj.setPublisherId("NO ID FOUND");
-					}
-                }}
-				catch(NullPointerException e)
-				{
 
+					}
 				}
-            }
-//            else if(currentNode.getNodeName().equals("article-id")&&rsj.getXMLPathComplete().contains("PMC")){
-//				try{
-//					if(currentNode.getAttributes().item(0).getNodeValue().equals("publisher-id"))
-//					{
-//
-//						try{
-//							rsj.setPublisherId(currentNode.getTextContent());
-//						}catch(Exception e)
-//						{
-//							rsj.setPublisherId("NO ID FOUND");
-//						}
-//					}}
-//				catch(NullPointerException e)
-//				{
-//
-//				}
-		//	}
+
+				if (rsj.getFullDate()==null||rsj.getFullDate().getYear()==null||rsj.getFullDate().getMonth()==null||rsj.getFullDate().getDay()==null||rsj.getFullDate().getRank()>1) {
+				getDate(currentNode, rsj);
+			}
+
 			if (currentNode.getNodeName().equals("p")){
 				if (currentNode.getTextContent().contains("Fig.")){
 					{	Boolean match=false;
@@ -1053,42 +837,32 @@ public class Main implements Text{
 							match=true;
 								keys.add((key+matcher.group(1)));
 								 figID = matcher.group();
-								//System.out.println(matcher.group(1));
 						}
 						if(match){
 							List<String> value = new ArrayList<>();
 
 							for (int l=0; l<keys.size(); l++){
-									if (figureContext.get(keys.get(l))==null) {
-
-										value = new ArrayList<>();
+								if (figureContext.get(keys.get(l))==null) {
+									value = new ArrayList<>();
+									value.add(getContentNoWhiteSpace(currentNode, figID));
+									figureContext.put(keys.get(l), value);
+								}else{
+									value = (List<String>) figureContext.get(keys.get(l));
+									String container = getContentNoWhiteSpace(currentNode, figID);
+									if(!value.contains(container)){
 										value.add(getContentNoWhiteSpace(currentNode, figID));
-										figureContext.put(keys.get(l), value);
-									}else{
-										value = (List<String>) figureContext.get(keys.get(l));
-										String container = getContentNoWhiteSpace(currentNode, figID);
-										if(!value.contains(container)){
-											value.add(getContentNoWhiteSpace(currentNode, figID));
-										}
-											figureContext.put(keys.get(l), value);
-										}
-
+									}
+									figureContext.put(keys.get(l), value);
 								}
-
-
-							//System.out.println(key+":"+getContentNoWhiteSpace(currentNode));
+							}
 						}
-
 					}
 				}
-
 			}
 			if(currentNode.getNodeName().matches("xref|InternalRef"))
 			{
-
 				try
 				{
-
 					if (currentNode.getAttributes().getNamedItem("ref-type").getTextContent().equals("fig"))
 					{
 						String key = currentNode.getAttributes().getNamedItem("rid").getTextContent();
@@ -1106,12 +880,6 @@ public class Main implements Text{
 							figureContext.put(key, value);
 						}
 					}
-
-
-
-
-
-
 				}
 				catch (Exception e) {
 					//e.printStackTrace();
@@ -1119,7 +887,6 @@ public class Main implements Text{
 				try {
 					if (currentNode.getAttributes().getNamedItem("RefID").getTextContent().startsWith("Fig")) {
 						String key = currentNode.getAttributes().getNamedItem("RefID").getTextContent();
-						//System.out.println(key);
 						List<String> value = new ArrayList<>();
 						if (figureContext.get(key)==null){
 							value = new ArrayList<>();
@@ -1137,8 +904,7 @@ public class Main implements Text{
 				}
 				catch(Exception e){
 					//e.printStackTrace();
-					}
-
+				}
 			}
 			try {
 				if (currentNode.getNodeName().matches("inline-formula|disp-formula")) {
@@ -1155,9 +921,7 @@ public class Main implements Text{
 			if(currentNode.getNodeName().matches("ref|Citation")){
 				Citation citation = new Citation();
 				getCitation(currentNode, citation);
-
-					rsj.Bibliography.add(citation);
-
+				rsj.Bibliography.add(citation);
 			}
 			if(currentNode.getNodeName().matches("fig|Figure"))
             {
@@ -1168,10 +932,6 @@ public class Main implements Text{
                     Node figNode = fig.item(j);
                     switch(figNode.getNodeName())
                     {
-
-//                        case "object-id":
-//                        r.setDOI(figNode.getTextContent());
-//                            break;
 						case "Caption":
 							r.setCaptionBody(getContentNoWhiteSpace(figNode));
 							break;
@@ -1183,10 +943,6 @@ public class Main implements Text{
                             //TODO:  This might be an error source if a Caption has more than 1 <p> section. 0 and 2 are left over, because they are only newline feed commands
                             try
 							{
-								//if(r.getLabel()!=null) {
-								//	r.setCaptionBody(r.getLabel() + " " + getContentNoWhiteSpace(figNode));
-								//}
-								//else{
 								if (currentNode.getParentNode().getNodeName().equals("fig-group"))	{
 									for (int g=0; g<currentNode.getChildNodes().getLength(); g++){
 										if(currentNode.getParentNode().getChildNodes().item(g).getNodeName().equals("caption")){
@@ -1200,14 +956,10 @@ public class Main implements Text{
 									r.setCaptionBody(getContentNoWhiteSpace(figNode));
 
 								}
-									//System.out.println(r.getCaptionBody());
-								//}
 							}catch(Exception e)
 							{
 								r.setCaptionBody("NO BODY FOUND");
 							}
-                            //r.setCaptionTitle(figNode.getChildNodes().item(1).getTextContent());
-                            //r.setCaptionBody(figNode.getChildNodes().item(3).getTextContent());
                             break;
 						case "MediaObject":
 							r.setGraphicDOI(figNode.getChildNodes().item(1).getAttributes().getNamedItem("FileRef").getNodeValue());
@@ -1240,23 +992,17 @@ public class Main implements Text{
 						Node figNode = figgroup.item(j);
 						switch (figNode.getNodeName()) {
 
-//                        case "object-id":
-//                        r.setDOI(figNode.getTextContent());
-//                            break;
 							case "label":
 								r.setLabel(getContentNoWhiteSpace(figNode));
 								break;
 							case "caption":
 								//TODO:  This might be an error source if a Caption has more than 1 <p> section. 0 and 2 are left over, because they are only newline feed commands
 								try {
-									//r.setCaptionBody(r.getLabel() + " " + getContentNoWhiteSpace(figgroup.item(j)));
 
 									r.setCaptionBody(getContentNoWhiteSpace(figgroup.item(j)));
 								} catch (Exception e) {
 									r.setCaptionBody("NO BODY FOUND");
 								}
-								//r.setCaptionTitle(figNode.getChildNodes().item(1).getTextContent());
-								//r.setCaptionBody(figNode.getChildNodes().item(3).getTextContent());
 								break;
 							case "graphic":
 								r.setGraphicDOI(figNode.getAttributes().getNamedItem("xlink:href").getNodeValue());
@@ -1271,7 +1017,7 @@ public class Main implements Text{
                 rsj.getResultList().add(r);
             }
             if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
-                //calls this method for all the children which is Element
+                //calls this method for all the children with node type Element
                 doSomething(rsj, currentNode);
             }
 			}
@@ -1282,119 +1028,292 @@ public class Main implements Text{
         }
     }
 
+	private static void getDate(Node currentNode, ResultSetJournal rsj) {
+
+		//Dates are contained in different tags. Some tags are more accurate than others, but not all tags are usually found in the same article.
+		// The date information is ranked according to what tag it comes from. It can only be overwritten by higher ranked tags
+
+		//Get date for Springer
+		if(currentNode.getNodeName().equals("OnlineDate")){
+			if(currentNode.getParentNode().getNodeName().equals("ArticleHistory")){
+				NodeList children = currentNode.getChildNodes();
+				metadata.PublicationDate date = new metadata.PublicationDate();
+				for (int m = 0; m < children.getLength(); m++) {
+					Node childNode = children.item(m);
+
+
+					if (childNode.getNodeName().equals("Day")) {
+						date.setDay(childNode.getTextContent());
+					}
+					if (childNode.getNodeName().equals("Month")) {
+						date.setMonth(childNode.getTextContent());
+					}
+					if (childNode.getNodeName().equals("Year")) {
+						date.setYear(childNode.getTextContent());
+					}
+				}
+				date.setRank(1);
+				rsj.setFullDate(date);
+				rsj.setPublicationYear(date.getYear());
+			}
+		}
+		else if(currentNode.getNodeName().equals("Accepted")){
+			if(rsj.getFullDate()!=null){
+				if(rsj.getFullDate().getRank()<2){
+					return;
+				}
+			}
+			if(currentNode.getParentNode().getNodeName().equals("ArticleHistory")){
+				NodeList children = currentNode.getChildNodes();
+				metadata.PublicationDate date = new metadata.PublicationDate();
+				for (int m = 0; m < children.getLength(); m++) {
+					Node childNode = children.item(m);
+
+
+					if (childNode.getNodeName().equals("Day")) {
+						date.setDay(childNode.getTextContent());
+					}
+					if (childNode.getNodeName().equals("Month")) {
+						date.setMonth(childNode.getTextContent());
+					}
+					if (childNode.getNodeName().equals("Year")) {
+						date.setYear(childNode.getTextContent());
+					}
+				}
+				date.setRank(2);
+				rsj.setFullDate(date);
+				rsj.setPublicationYear(date.getYear());
+			}
+
+
+		}
+
+		//Get date for other formats: try node name pub-date(usually Frontiers and PMC)
+		//some pub-date tags are applicable: with attribute epub (1.priority) or ppub (2.priority) or no attribute
+		if(currentNode.getNodeName().equals("pub-date")) {
+			if (currentNode.hasAttributes()) {
+				if (currentNode.getAttributes().item(0).getNodeValue().equals("epub")||currentNode.getAttributes().getNamedItem("pub-type").getNodeValue().equals("epub")) {
+					NodeList children = currentNode.getChildNodes();
+					metadata.PublicationDate date = new metadata.PublicationDate();
+					for (int m = 0; m < children.getLength(); m++) {
+						Node childNode = children.item(m);
+
+
+						if (childNode.getNodeName().equals("day")) {
+							date.setDay(childNode.getTextContent());
+						}
+						if (childNode.getNodeName().equals("month")) {
+							date.setMonth(childNode.getTextContent());
+						}
+						if (childNode.getNodeName().equals("year")) {
+							date.setYear(childNode.getTextContent());
+						}
+					}
+					date.setRank(1);
+					rsj.setFullDate(date);
+					rsj.setPublicationYear(date.getYear());
+					return;
+				} else if (currentNode.getAttributes().item(0).getNodeValue().equals("ppub")||currentNode.getAttributes().getNamedItem("pub-type").getNodeValue().equals("ppub")) {
+					if(rsj.getFullDate()!=null){
+						if(rsj.getFullDate().getRank()<3){
+							return;
+						}
+					}
+					NodeList children = currentNode.getChildNodes();
+					metadata.PublicationDate date = new metadata.PublicationDate();
+					for (int m = 0; m < children.getLength(); m++) {
+						Node childNode = children.item(m);
+
+
+						if (childNode.getNodeName().equals("day")) {
+							date.setDay(childNode.getTextContent());
+						}
+						if (childNode.getNodeName().equals("month")) {
+							date.setMonth(childNode.getTextContent());
+						}
+						if (childNode.getNodeName().equals("year")) {
+							date.setYear(childNode.getTextContent());
+						}
+					}
+					date.setRank(3);
+					rsj.setFullDate(date);
+					rsj.setPublicationYear(date.getYear());
+					return;
+				}
+				else if (currentNode.getAttributes().item(0).getNodeValue().equals("archival-date")||currentNode.getAttributes().getNamedItem("pub-type").getNodeValue().equals("archival-date")) {
+					if(rsj.getFullDate()!=null){
+						if(rsj.getFullDate().getRank()<2){
+							return;
+						}
+					}
+					NodeList children = currentNode.getChildNodes();
+					metadata.PublicationDate date = new metadata.PublicationDate();
+					for (int m = 0; m < children.getLength(); m++) {
+						Node childNode = children.item(m);
+
+
+						if (childNode.getNodeName().equals("day")) {
+							date.setDay(childNode.getTextContent());
+						}
+						if (childNode.getNodeName().equals("month")) {
+							date.setMonth(childNode.getTextContent());
+						}
+						if (childNode.getNodeName().equals("year")) {
+							date.setYear(childNode.getTextContent());
+						}
+					}
+					date.setRank(2);
+					rsj.setFullDate(date);
+					rsj.setPublicationYear(date.getYear());
+				}
+
+
+				//if there are no attributes (usually Copernicus):
+			} else {
+				NodeList children = currentNode.getChildNodes();
+				metadata.PublicationDate date = new metadata.PublicationDate();
+				for (int m = 0; m < children.getLength(); m++) {
+					Node childNode = children.item(m);
+
+
+					if (childNode.getNodeName().equals("day")) {
+						date.setDay(childNode.getTextContent());
+					}
+					if (childNode.getNodeName().equals("month")) {
+						date.setMonth(childNode.getTextContent());
+					}
+					if (childNode.getNodeName().equals("year")) {
+						date.setYear(childNode.getTextContent());
+					}
+				}
+				date.setRank(1);
+				rsj.setFullDate(date);
+				rsj.setPublicationYear(date.getYear());
+			}
+		}
+
+
+		//try node name date (usually Hindawi, sometimes PMC
+		if(currentNode.getNodeName().equals("date")) {
+			if (currentNode.hasAttributes()) {
+				if (currentNode.getAttributes().item(0).getNodeValue().equals("accepted")||currentNode.getAttributes().getNamedItem("date-type").getNodeValue().equals("accepted")) {
+					if(rsj.getFullDate()!=null){
+						if(rsj.getFullDate().getRank()<3){
+							return;
+						}
+					}
+					NodeList children = currentNode.getChildNodes();
+					metadata.PublicationDate date = new metadata.PublicationDate();
+					for (int m = 0; m < children.getLength(); m++) {
+						Node childNode = children.item(m);
+
+
+						if (childNode.getNodeName().equals("day")) {
+							date.setDay(childNode.getTextContent());
+						}
+						if (childNode.getNodeName().equals("month")) {
+							date.setMonth(childNode.getTextContent());
+						}
+						if (childNode.getNodeName().equals("year")) {
+							date.setYear(childNode.getTextContent());
+						}
+					}
+					date.setRank(3);
+					rsj.setFullDate(date);
+					rsj.setPublicationYear(date.getYear());
+				}
+				else if (currentNode.getAttributes().item(0).getNodeValue().equals("pub")||currentNode.getAttributes().getNamedItem("date-type").getNodeValue().equals("pub")) {
+					NodeList children = currentNode.getChildNodes();
+					metadata.PublicationDate date = new metadata.PublicationDate();
+					for (int m = 0; m < children.getLength(); m++) {
+						Node childNode = children.item(m);
+
+
+						if (childNode.getNodeName().equals("day")) {
+							date.setDay(childNode.getTextContent());
+						}
+						if (childNode.getNodeName().equals("month")) {
+							date.setMonth(childNode.getTextContent());
+						}
+						if (childNode.getNodeName().equals("year")) {
+							date.setYear(childNode.getTextContent());
+						}
+					}
+					date.setRank(1);
+					rsj.setFullDate(date);
+					rsj.setPublicationYear(date.getYear());
+				}
+
+			}
+		}
+
+	}
+
 	private static String getContentNoWhiteSpace(Node node, String key) {
 
-			String content = "";
-
-			//node.getIs
-
-			/*if (node.getNodeName().matches("inline-formula|disp-formula")) {
-
-				if (node.getParentNode().getNodeName().matches("Caption|caption|article-title|ArticleTitle")) {
-					content += getFormula(node);
-				} else if (node.getParentNode().getParentNode().getNodeName().matches("Caption|caption")) {
-					content += getFormula(node);
-				} else if (node.getParentNode().getParentNode().getParentNode().getNodeName().matches("Caption|caption")) {
-					content += getFormula(node);
-				} else if (node.getAttributes().getNamedItem("ref-type") != null) {
-					if (node.getAttributes().getNamedItem("ref-type").getTextContent().equals("fig")) {
-						content += getFormula(node);
-					}
-				} else {
-					content += node.getTextContent().replaceAll("\n", "").replaceAll("\t", "").trim();
+		String content = "";
+		if (node.getNodeName().matches("Para|p")) {
+			NodeList childNodes = node.getChildNodes();
+			for (int g = 0; g < childNodes.getLength(); g++) {
+				Node child = childNodes.item(g);
+				try{
+					content += getContentNoWhiteSpace(child, key).replaceAll(key,("#figure#"));
+				}catch (Exception e){
 				}
-
-
-			}else  if (node.getNodeName().equals("sub")) {
-				content += ("<sub>" + node.getTextContent() + "</sub>");
-
-			} else if (node.getNodeName().equals("sup")) {
-				content += ("<sup>" + node.getTextContent() + "</sup>");
-
-
-			} else*/ if (node.getNodeName().matches("Para|p")) {
-				NodeList childNodes = node.getChildNodes();
-				for (int g = 0; g < childNodes.getLength(); g++) {
-					Node child = childNodes.item(g);
-					try{
-						content += getContentNoWhiteSpace(child, key).replaceAll(key,("#figure#"));
-					}catch (Exception e){
-						//System.out.println("paragraph fehler.");
-					}
-				}
-				content += "\n";
-
-			} else if (node.getNodeName().matches("xref|InternalRef")) {
-
-					try {
-						if (node.getAttributes().getNamedItem("ref-type").getTextContent().equals("fig")){
-							if (node.getAttributes().getNamedItem("rid").getTextContent().equals(key)) {
-								content += "#figure#";
-
-							}
-                        }else if(!node.hasChildNodes()){
-							content += (" " + references.get(node.getAttributes().getNamedItem("rid").getTextContent()) + " ");
-							//System.out.println("no child nodes: "+content);
-						}else{
-                        	content+=node.getTextContent();
-                        	//System.out.println("with child nodes: "+content);
-						}
-
-					} catch (Exception e) {
-						//e.printStackTrace();
-						//System.out.println("ref-type");
-					}
-					try {
-						if(node.getAttributes().getNamedItem("RefID").getTextContent().startsWith("Fig")){
-							if (node.getAttributes().getNamedItem("RefID").getTextContent().equals(key)) {
-								content += "#figure#";
-
-							}
-                        }else if(!node.hasChildNodes()){
-							content += (" " + references.get(node.getAttributes().getNamedItem("rid").getTextContent()) + " ");
-						}else{
-							content+=node.getTextContent();
 			}
+			content += "\n";
 
-					} catch (Exception e) {
-						//e.printStackTrace();
-						//System.out.println("RefID");
+		} else if (node.getNodeName().matches("xref|InternalRef")) {
+			try {
+				if (node.getAttributes().getNamedItem("ref-type").getTextContent().equals("fig")){
+					if (node.getAttributes().getNamedItem("rid").getTextContent().equals(key)) {
+						content += "#figure#";
+
 					}
-
-
-
-			} else if (node.hasChildNodes()) {
-				NodeList childNodes = node.getChildNodes();
-				for (int g = 0; g < childNodes.getLength(); g++) {
-					Node child = childNodes.item(g);
-					try{
-						content += getContentNoWhiteSpace(child, key);
-					}catch (Exception e){
-						//System.out.println("child nodes");
-					}
+				}else if(!node.hasChildNodes()){
+					content += (" " + references.get(node.getAttributes().getNamedItem("rid").getTextContent()) + " ");
+				}else{
+					content+=node.getTextContent();
 				}
-			} else if (node.getNodeType() == Node.TEXT_NODE) {
-
-				String content1 = node.getNodeValue().replaceAll("\n", " ").replaceAll("\t", " ").trim();
-				if (!(content1.endsWith(" "))) {
-					content1 += " ";
-				}
-				content += content1;
+			} catch (Exception e) {
 
 			}
-			//if((System.currentTimeMillis() - start)>10)
-			//System.out.println(System.currentTimeMillis() - start);
-			return (content.trim().replaceAll("\\s+", " ") + " ");
+			try {
+				if(node.getAttributes().getNamedItem("RefID").getTextContent().startsWith("Fig")){
+					if (node.getAttributes().getNamedItem("RefID").getTextContent().equals(key)) {
+						content += "#figure#";
 
-		/*catch(Exception e)
-		{
-			e.printStackTrace();
-			e.getStackTrace()[0].getLineNumber();
-			System.out.println("Fehler bei getContentNowhiteSpace von Context");
-		}*/
-		//return "Error";
+					}
+				}else if(!node.hasChildNodes()){
+					content += (" " + references.get(node.getAttributes().getNamedItem("rid").getTextContent()) + " ");
+				}else{
+					content+=node.getTextContent();
+				}
 
+				} catch (Exception e) {
 
+				}
+
+		} else if (node.hasChildNodes()) {
+			NodeList childNodes = node.getChildNodes();
+			for (int g = 0; g < childNodes.getLength(); g++) {
+				Node child = childNodes.item(g);
+				try{
+					content += getContentNoWhiteSpace(child, key);
+				}catch (Exception e){
+
+				}
+			}
+		} else if (node.getNodeType() == Node.TEXT_NODE) {
+
+			String content1 = node.getNodeValue().replaceAll("\n", " ").replaceAll("\t", " ").trim();
+			if (!(content1.endsWith(" "))) {
+				content1 += " ";
+			}
+			content += content1;
+
+		}
+		return (content.trim().replaceAll("\\s+", " ") + " ");
 	}
 
 	private static void getCitation(Node citationNode, Citation citation) {
@@ -1402,7 +1321,6 @@ public class Main implements Text{
 			NodeList citationPartList = citationNode.getChildNodes();
 			if (citation.getText() == null) {
 				citation.setText(getContentNoWhiteSpace(citationNode));
-
 			}
 
 			for (int j = 0; j < citationPartList.getLength(); j++) {
@@ -1468,13 +1386,8 @@ public class Main implements Text{
 
 
 	private static String getContentNoWhiteSpace(Node node){
-		//if (Text.isElementContentWhitespace)
-		//long start = System.currentTimeMillis();
 		try {
 			String content = "";
-
-			//node.getIs
-
 			if (node.getNodeName().matches("inline-formula|disp-formula")) {
 
 				if (node.getParentNode().getNodeName().matches("Caption|caption|article-title|ArticleTitle")) {
@@ -1514,10 +1427,8 @@ public class Main implements Text{
 
 				}else if(!node.hasChildNodes()){
 				content += (" " + references.get(node.getAttributes().getNamedItem("rid").getTextContent()) + " ");
-				//System.out.println("no child nodes: "+content);
 				}else{
 				content+=node.getTextContent();
-				//System.out.println("with child nodes: "+content);
 			}
 			}  else if (node.hasChildNodes()) {
 				NodeList childNodes = node.getChildNodes();
@@ -1532,10 +1443,7 @@ public class Main implements Text{
 					content1 += " ";
 				}
 				content += content1;
-
 			}
-			//if((System.currentTimeMillis() - start)>10)
-			//System.out.println(System.currentTimeMillis() - start);
 			return (content.trim().replaceAll("\\s+", " ") + " ");
 		}
 		catch(Exception e)
@@ -1547,6 +1455,7 @@ public class Main implements Text{
 	}
 	private static String getFormula(Node node) {
 
+		//TODO find a good solution for formulas. Currently, only the text part will be shown but no formatting
 		/*String formula= null;
 		try {
 			formula = convertFormula(node);
@@ -1582,6 +1491,7 @@ public class Main implements Text{
 	}
 
 	private static void context(ResultSetJournal rsj)
+			//this function matches the result figures with any figures that were referenced in the text, so each figure object will include the context
 	{
 		for(int i = 0; i<rsj.resultList.size(); i++)
 		{
@@ -1589,8 +1499,6 @@ public class Main implements Text{
 				rsj.resultList.get(i).setContext((List<String>) figureContext.get(rsj.resultList.get(i).figID));
 			else
 				rsj.resultList.get(i).setContext((List<String>) figureContext.get(rsj.resultList.get(i).figGroupID));
-
-			//System.out.println(rsj.resultList.get(i).figID+rsj.resultList.get(i).getContext());
 		}
 	}
 
@@ -1619,248 +1527,5 @@ public class Main implements Text{
 		System.out.print(string);
 	}
 
-	@Override
-	public Text splitText(int i) throws DOMException {
-		return null;
-	}
 
-	@Override
-	public boolean isElementContentWhitespace() {
-		return false;
-	}
-
-	@Override
-	public String getWholeText() {
-		return null;
-	}
-
-	@Override
-	public Text replaceWholeText(String s) throws DOMException {
-		return null;
-	}
-
-	@Override
-	public String getData() throws DOMException {
-		return null;
-	}
-
-	@Override
-	public void setData(String s) throws DOMException {
-
-	}
-
-	@Override
-	public int getLength() {
-		return 0;
-	}
-
-	@Override
-	public String substringData(int i, int i1) throws DOMException {
-		return null;
-	}
-
-	@Override
-	public void appendData(String s) throws DOMException {
-
-	}
-
-	@Override
-	public void insertData(int i, String s) throws DOMException {
-
-	}
-
-	@Override
-	public void deleteData(int i, int i1) throws DOMException {
-
-	}
-
-	@Override
-	public void replaceData(int i, int i1, String s) throws DOMException {
-
-	}
-
-	@Override
-	public String getNodeName() {
-		return null;
-	}
-
-	@Override
-	public String getNodeValue() throws DOMException {
-		return null;
-	}
-
-	@Override
-	public void setNodeValue(String s) throws DOMException {
-
-	}
-
-	@Override
-	public short getNodeType() {
-		return 0;
-	}
-
-	@Override
-	public Node getParentNode() {
-		return null;
-	}
-
-	@Override
-	public NodeList getChildNodes() {
-		return null;
-	}
-
-	@Override
-	public Node getFirstChild() {
-		return null;
-	}
-
-	@Override
-	public Node getLastChild() {
-		return null;
-	}
-
-	@Override
-	public Node getPreviousSibling() {
-		return null;
-	}
-
-	@Override
-	public Node getNextSibling() {
-		return null;
-	}
-
-	@Override
-	public NamedNodeMap getAttributes() {
-		return null;
-	}
-
-	@Override
-	public Document getOwnerDocument() {
-		return null;
-	}
-
-	@Override
-	public Node insertBefore(Node node, Node node1) throws DOMException {
-		return null;
-	}
-
-	@Override
-	public Node replaceChild(Node node, Node node1) throws DOMException {
-		return null;
-	}
-
-	@Override
-	public Node removeChild(Node node) throws DOMException {
-		return null;
-	}
-
-	@Override
-	public Node appendChild(Node node) throws DOMException {
-		return null;
-	}
-
-	@Override
-	public boolean hasChildNodes() {
-		return false;
-	}
-
-	@Override
-	public Node cloneNode(boolean b) {
-		return null;
-	}
-
-	@Override
-	public void normalize() {
-
-	}
-
-	@Override
-	public boolean isSupported(String s, String s1) {
-		return false;
-	}
-
-	@Override
-	public String getNamespaceURI() {
-		return null;
-	}
-
-	@Override
-	public String getPrefix() {
-		return null;
-	}
-
-	@Override
-	public void setPrefix(String s) throws DOMException {
-
-	}
-
-	@Override
-	public String getLocalName() {
-		return null;
-	}
-
-	@Override
-	public boolean hasAttributes() {
-		return false;
-	}
-
-	@Override
-	public String getBaseURI() {
-		return null;
-	}
-
-	@Override
-	public short compareDocumentPosition(Node node) throws DOMException {
-		return 0;
-	}
-
-	@Override
-	public String getTextContent() throws DOMException {
-		return null;
-	}
-
-	@Override
-	public void setTextContent(String s) throws DOMException {
-
-	}
-
-	@Override
-	public boolean isSameNode(Node node) {
-		return false;
-	}
-
-	@Override
-	public String lookupPrefix(String s) {
-		return null;
-	}
-
-	@Override
-	public boolean isDefaultNamespace(String s) {
-		return false;
-	}
-
-	@Override
-	public String lookupNamespaceURI(String s) {
-		return null;
-	}
-
-	@Override
-	public boolean isEqualNode(Node node) {
-		return false;
-	}
-
-	@Override
-	public Object getFeature(String s, String s1) {
-		return null;
-	}
-
-	@Override
-	public Object setUserData(String s, Object o, UserDataHandler userDataHandler) {
-		return null;
-	}
-
-	@Override
-	public Object getUserData(String s) {
-		return null;
-	}
 }

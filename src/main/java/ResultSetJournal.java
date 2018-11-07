@@ -17,18 +17,18 @@ import java.util.List;
 public class ResultSetJournal
 {
 	List<Author> Authors = new ArrayList<>();
-	List<Author> Editor = new ArrayList<>();
 	List<String> Sections = new ArrayList<>();
 	String Body;
 	String Title;
-	Integer bodyLenght=-1;
-	Integer abstractLenght=-1;
+	Integer bodyLength=-1;
+	Integer abstractLength=-1;
 	String Abstract;
 	String journalDOI ="";
 	String journalName;
-	String PublisherId;
 	String publicationYear;
-	String XMLPathYear;
+	String PmcID;
+	String PublisherId;
+	//String XMLPathYear;
 	String XMLPathComplete;
 	String Volume;
 	String Issue;
@@ -36,13 +36,13 @@ public class ResultSetJournal
 	List<String> Keywords = new ArrayList<>();
 	String License;
 	String Publisher;
-	String pmcID;
 	File file;
 	boolean hasFormula;
-	String copyrightHolder;
 	String Error="";
 	List <Citation> Bibliography = new ArrayList<>();
 	List<ID> IDs = new ArrayList<>();
 	List<Result> resultList = new ArrayList<>();
 	PublicationDate fullDate;
+	String source;
+
 }

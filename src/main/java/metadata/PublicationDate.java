@@ -11,6 +11,7 @@ public class PublicationDate {
     String day;
     String month;
     String year;
+    int rank;
     public String toString(){
         return("day: "+day+"month: "+month+"year: "+year);
     }
