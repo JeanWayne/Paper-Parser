@@ -2,18 +2,14 @@
 import metadata.Author;
 import metadata.Citation;
 import metadata.ID;
+import org.apache.log4j.*;
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamWriter;
-import javax.xml.transform.*;
-import javax.xml.transform.dom.DOMSource;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,9 +24,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 //TODO year should be from FullDate
@@ -42,37 +35,49 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
  */
 public class Main{
 
-	static final String location="D:\\Artikel\\Test Collection\\Springer";
-    static final String outputEncoding = "UTF-8";
-    static final boolean VERBOSE=true;
-	static final String mongoIP="141.71.5.22";
-	static final int mongoPort=27017;
-	static final String mongoDataBase="NewSchema";
-	static final boolean withDownload=false; //Download Images as binary data?
-	static final int outPutFormat=2; // 0=path, 1= current/overall, 2=percentage.
+	static String location="C:\\_NOA\\Hindawi_work";//D:\\Artikel\\Test Collection\\Springer";
+    static String outputEncoding = "UTF-8";
+    static int VERBOSE=1;
+	static String mongoIP="141.71.5.22";
+	static int mongoPort=27017;
 
-//neuer Versuch
+	static String mongoDataBase="V2_Test";
+	static String mongoErrorCol="NOA_Errors";
+	static String mongoJournalcol="NOA_Journals";
+	static String mongoImageCol="NOA_Images";
+
+	static boolean withDownload=false; //Download Images as binary data?
+	static int outPutFormat=2; // 0=path, 1= current/overall, 2=percentage.
+	private static Logger logger = Logger.getRootLogger();
+
+	//neuer Versuch
 	/*
 	* DATA HANDLING
 	*/
 	public static List<ResultSetJournal> resultTorso = new ArrayList<>();
 	public static HashMap figureContext = new HashMap();
 	public static HashMap references = new HashMap();
+	private static Map<String, String> map = new HashMap<String, String>();
+
 	public static int withFormula=0;
 	public static int articles =0;
 	public static long numberOfDocs=-1;
 	public static long currentDoc=0;
 	private static long startTime=0;
+	static String uniqueHash="asdfasdf";
 
 	public static void main(String[] args) throws IOException
-
 	{
+		readArgs(args);
+
+
+		//////// Starte logic
 		generateNoaLabel();
 
 
 
 		System.out.println("Start PaperParser");
-        if(VERBOSE)
+        if(VERBOSE>0)
 		{	startTime=System.currentTimeMillis();
 			numberOfDocs= Files.walk(Paths.get(location))
 					.parallel()
@@ -144,9 +149,56 @@ public class Main{
 //			//System.out.println(r.getJournalDOI()+ " --- was written to Mongo \\o/");
 //		}
 		System.out.println("Artikel mit Bilden die Formeln in der Unterschrift haben: "+withFormula+" von "+articles);
-        System.out.println("DONE ----  " + resultTorso.size() + " elements completed");
+        System.out.println("--- DONE ----");
 
     }
+
+    private static void readArgs(String[] args)
+	{
+		if(args.length%2!=0)//||args.length==0)
+			throw new IllegalArgumentException("Wrong number of Arguments");
+		if(args.length==0)
+			System.out.println("DEBUG MODE ACTIVE");
+		
+		for(int i=0;i<args.length;i+=2)//for(String s : args)
+		{
+			if(!args[i].contains("-")||args[i].length()<2)
+				throw new IllegalArgumentException("Error with ParamList");
+			map.put(args[i].substring(1,args[i].length()),args[i+1]);
+		}
+		if(map.containsKey("paperLoc"))
+			location=map.get("paperLoc");//"D:\\Artikel\\Test Collection\\Springer";
+		outputEncoding = "UTF-8";
+		if(map.containsKey("verbose"))
+			VERBOSE=Integer.parseInt(map.get("verbose"));
+		if(map.containsKey("mongoIP"))
+			mongoIP= map.get("mongoIP"); //"141.71.5.22";
+		if(map.containsKey("mongoPort"))
+			mongoPort= Integer.parseInt(map.get("mongoPort")); //27017;
+		if(map.containsKey("mongoDatabase"))
+			mongoDataBase=map.get("mongoDatabase");
+		if(map.containsKey("mongoErrorCollection"))
+			mongoErrorCol=map.get("mongoErrorCollection");
+		if(map.containsKey("mongoImageCollection"))
+			mongoImageCol=map.get("mongoImageCollection");
+		if(map.containsKey("mongoJournalCollection"))
+			mongoJournalcol=map.get("mongoJournalCollection");
+
+		withDownload=false; //Download Images as binary data?
+		outPutFormat=2; // 0=path, 1= current/overall, 2=percentage.
+
+		try {
+			SimpleLayout layout = new SimpleLayout();
+			ConsoleAppender consoleAppender = new ConsoleAppender( layout );
+			logger.addAppender( consoleAppender );
+			FileAppender fileAppender = new FileAppender( layout, "logs/"+uniqueHash+".log", true );
+			logger.addAppender( fileAppender );
+			// ALL | DEBUG | INFO | WARN | ERROR | FATAL | OFF:
+			logger.setLevel( Level.ALL );
+		} catch( Exception ex ) {
+			System.out.println( ex );
+		}
+	}
 
 	public static int countFilesInDir(File folder, int count) {
 		File[] files = folder.listFiles();
@@ -292,21 +344,22 @@ public class Main{
 			//System.out.print("mondowrite");System.out.println(System.currentTimeMillis() - start);
 			references.clear();
 			figureContext.clear();
-			System.out.println("Wrote: " + rsj.getXMLPathComplete());
-			if(VERBOSE) {
-				switch(outPutFormat){
-					case 0:
-						System.out.println("Wrote: " + rsj.getXMLPathComplete());
-						break;
-					case 1:
-						System.out.printf("%-10d / %-10d\n",++currentDoc,numberOfDocs);
-						break;
-					case 2:
-						System.out.println();
-						printProgress(startTime,numberOfDocs,++currentDoc);
-						break;
+
+			switch(VERBOSE){
+				case 0:
+					break;
+				case 1:
+					System.out.printf("%-10d / %-10d\n",++currentDoc,numberOfDocs);
+					break;
+				case 2:
+					printProgress(startTime,numberOfDocs,++currentDoc);
+					System.out.println(" Processed: " + rsj.getXMLPathComplete());
+					break;
+				default:
+					System.out.println("Wrote: " + rsj.getXMLPathComplete());
+					break;
 				}
-			}
+
 		}
 //		++i;
 //		if(i%1000==0)
@@ -1524,7 +1577,7 @@ public class Main{
 				.append(String.join("", Collections.nCopies((int) (Math.log10(total)) - (int) (Math.log10(current)), " ")))
 				.append(String.format(" %d/%d, ETA: %s", current, total, etaHms));
 
-		System.out.print(string);
+		System.out.print(string+"  ");
 	}
 
 

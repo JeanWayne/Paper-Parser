@@ -16,8 +16,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -138,49 +142,77 @@ public class MongoDBRepo {
             }
             //replace month name with number
             String month = (String) pdate.get("month");
-            if(!(month.matches("\\d+"))){
-                if(month.equals("January")){
-                    pdate.put("month", "1");
-                }
-                else if(month.equals("February")){
-                    pdate.put("month", "2");
-                }
-                else if(month.equals("March")){
-                    pdate.put("month", "3");
-                }
-                else if(month.equals("April")){
-                    pdate.put("month", "4");
-                }
-                else if(month.equals("May")){
-                    pdate.put("month", "5");
-                }
-                else if(month.equals("June")){
-                    pdate.put("month", "6");
-                }
-                else if(month.equals("July")){
-                    pdate.put("month", "7");
-                }
-                else if(month.equals("August")){
-                    pdate.put("month", "8");
-                }
-                else if(month.equals("September")){
-                    pdate.put("month", "9");
-                }
-                else if(month.equals("October")){
-                    pdate.put("month", "10");
-                }
-                else if(month.equals("November")){
-                    pdate.put("month", "11");
-                }
-                else if(month.equals("December")){
-                    pdate.put("month", "12");
-                }
+            if(!(month.matches("\\d+")))
+            {
+                Date date = new SimpleDateFormat("MMMM", Locale.ENGLISH).parse(month);
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(date);
+                pdate.put("month",cal.get(Calendar.MONTH)+1); //Zero based. 0-11
+                //println(cal.get(Calendar.MONTH));
+//
+//                if(month.equals("January")){
+//                    pdate.put("month", "1");
+//                }
+//                else if(month.equals("February")){
+//                    pdate.put("month", "2");
+//                }
+//                else if(month.equals("March")){
+//                    pdate.put("month", "3");
+//                }
+//                else if(month.equals("April")){
+//                    pdate.put("month", "4");
+//                }
+//                else if(month.equals("May")){
+//                    pdate.put("month", "5");
+//                }
+//                else if(month.equals("June")){
+//                    pdate.put("month", "6");
+//                }
+//                else if(month.equals("July")){
+//                    pdate.put("month", "7");
+//                }
+//                else if(month.equals("August")){
+//                    pdate.put("month", "8");
+//                }
+//                else if(month.equals("September")){
+//                    pdate.put("month", "9");
+//                }
+//                else if(month.equals("October")){
+//                    pdate.put("month", "10");
+//                }
+//                else if(month.equals("November")){
+//                    pdate.put("month", "11");
+//                }
+//                else if(month.equals("December")){
+//                    pdate.put("month", "12");
+//                }
             }
         } catch (Exception e){
             pdate=null;
         }
 
         Boolean tested= false;
+
+
+        //set licenseType
+        String license = (String) rsj.getLicense();
+        String licenseType="";
+        if(license==null){
+            licenseType="invalid";
+        }
+        else if(license.contains("creativecommons.org/licenses/by/4.0")){
+            licenseType="cc-by-4.0";
+        }else if(license.contains("creativecommons.org/licenses/by/3.0")){
+            licenseType="cc-by-3.0";
+        }else if(license.contains("creativecommons.org/licenses/by/2.0")){
+            licenseType="cc-by-2.0";
+        }else if(license.contains("creativecommons.org/licenses/by/2.5")) {
+            licenseType = "cc-by-2.5";
+        }else if(license.contains("www.frontiersin.org/licenseagreement")){
+            licenseType = "frontiers";
+        }else{
+            licenseType="nay";
+        }
 
         for(Result a : rsj.getResultList()) {
 
@@ -251,68 +283,36 @@ public class MongoDBRepo {
             Document img = new Document();
             img.put("_id",new ObjectId());
 
-            if (a.getCaptionTitle() != null)
+            if (a.getLabel() != null)
+                lengthOfTitle = a.getLabel().length();
 
-                lengthOfTitle = a.getCaptionTitle().length();
+            if (a.getCaptionBody() != null)
+                lengthOfBody = a.getCaptionBody().length();
 
-                if (a.getCaptionBody() != null)
 
-                    lengthOfBody = a.getCaptionBody().length();
 
-                if (downloading) {
-
-                    try {
-                        a.download();
-                    } catch (IOException e) {
-                        //e.printStackTrace();
-                System.out.println(a.getImageURL());
-                    }
-
-                findings.add(img.append("findingID", a.getFindingID())
-                        .append("originDOI",rsj.getJournalDOI())
-                        .append("source_id",d.get("_id"))
-                        .append("captionTitle", a.getLabel())
-                        .append("captionTitleLenght",  a.getLabel().length())
-                        .append("captionBody", a.getCaptionBody())
-                        .append("captionBodyLength", lengthOfBody)
-                        .append("URL2Image", s)
-                        .append("binary_data", a.getImage())
-                        .append("context", a.getContext()));
-                } else
-                    {
-
-                        findings.add(img.append("findingID", a.getFindingID())
-                        .append("originDOI",rsj.getJournalDOI())
-                        .append("source_id",d.get("_id"))
-                        .append("captionTitle", a.getLabel())
-
-                        .append("captionBody", a.getCaptionBody())
-
-                        .append("captionBodyLenght", lengthOfBody)
-
-                        .append("URL2Image", s)
-                        .append("context", a.getContext()));
-
-                    }
+            //Here are the Items of the Image Collection definied.
+            //Later added: discipline, wpterms, wpcats, acronym, imageType filled, CopyrightFlag, TIB_URL
+            findings.add(img.append("findingID", a.getFindingID())
+                    .append("DOI",rsj.getJournalDOI())
+                    .append("source_id",d.get("_id"))
+                    .append("title", rsj.getTitle())
+                    .append("journalName", rsj.getJournalName())
+                    .append("captionTitle", a.getLabel())
+                    .append("captionBody", a.getCaptionBody())
+                    .append("captionTitleLength", lengthOfTitle)
+                    .append("captionBodyLenght", lengthOfBody)
+                    .append("URL", s) //Note: New begin
+                    .append("licenseType", licenseType)
+                    .append("authors", Authors)
+                    .append("imageType", "nay")
+                    .append("pubYear", pdate.get("year"))
+                    .append("pubMonth", pdate.get("month"))
+                    .append("pubDay", pdate.get("day"))
+                    .append("publisher", rsj.getPublisher())
+                    .append("context", a.getContext()));
         }
 
-        //set licenseType
-        String license = (String) rsj.getLicense();
-        String licenseType="unclassified";
-        if(license==null){
-            licenseType="invalid";
-        }
-        else if(license.contains("creativecommons.org/licenses/by/4.0")){
-            licenseType="cc-by-4.0";
-        }else if(license.contains("creativecommons.org/licenses/by/3.0")){
-            licenseType="cc-by-3.0";
-        }else if(license.contains("creativecommons.org/licenses/by/2.0")){
-            licenseType="cc-by-2.0";
-        }else if(license.contains("creativecommons.org/licenses/by/2.5")) {
-            licenseType = "cc-by-2.5";
-        }else if(license.contains("www.frontiersin.org/licenseagreement")){
-            licenseType = "frontiers";
-        }
 
 
 
@@ -324,13 +324,13 @@ public class MongoDBRepo {
         d.append("journalIssue", rsj.getIssue());
         d.append("pages", rsj.getPages());
         d.append("license", rsj.getLicense());
-	d.append("LicenseType", licenseType);
+	    d.append("LicenseType", licenseType);
         d.append("publisher", rsj.getPublisher());
         d.append("keywords", rsj.getKeywords());
-        d.append("Bibliography", Bibliography);
-        d.append("IDList",IDList);
-        d.append("PublicationDate", pdate);
-        d.append("formula", rsj.hasFormula);
+        d.append("Bibliography", Bibliography);     //TODO Wichtig?
+        d.append("IDList",IDList);                     //TODO Wichtig?
+        d.append("PublicationDate", pdate);                //TODO aufsplitten
+        d.append("formula", rsj.hasFormula);               //TODO Wichtig?
         d.append("source", rsj.getSource());
 
         if(rsj.getAbstract()!=null)
@@ -349,16 +349,19 @@ public class MongoDBRepo {
 
         d.append("numOfFindings",findings.size());
         d.append("path2file",rsj.getXMLPathComplete());
+
         try{
             //db.getCollection("Version26.09.").insertOne(d);
             for(Document y : findings)
             {
                 findingsRef.add(y.get("_id"));
-                db.getCollection("Corpus_Image_"+date).insertOne(y);
+                //db.getCollection("Corpus_Image_"+date).insertOne(y);
+                db.getCollection(Main.mongoImageCol).insertOne(y);
             }
             d.append("findingsRef",findingsRef);
 
-            db.getCollection("Corpus_Journal_"+date).insertOne(d);
+            //db.getCollection("Corpus_Journal_"+date).insertOne(d);
+            db.getCollection(Main.mongoJournalcol).insertOne(d);
         }catch(Exception e){
             System.out.println(e);
             System.out.println(rsj.getXMLPathComplete());
@@ -387,7 +390,8 @@ public class MongoDBRepo {
     public void writeError(String error)
     {
         Document d = new Document("Error", error);
-        db.getCollection("Errors_"+date).insertOne(d);
+        //db.getCollection("Errors_"+date).insertOne(d);
+        db.getCollection(Main.mongoErrorCol).insertOne(d);
     }
 }
 
